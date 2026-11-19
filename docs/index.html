@@ -63,8 +63,31 @@ body .action .shake{width:44px;min-height:44px}
 <script>// Eigene Antworttexte. Die Reihenfolge bevorzugt spezifische Themen.
 const strategyTopics = [
   {
+    topic: "Herkunft und Arbeit",
+    anchors: /(?:ausländer|migrant|geflüchtet|flüchtling|zugewander|zuwander|aus dem ausland)/u,
+    cues: /(?:nehm(?:en|t) (?:[\p{L}]+ ){0,4}(?:jobs?|arbeit(?:splätze)?) weg|klau(?:en|t) (?:[\p{L}]+ ){0,4}(?:jobs?|arbeit(?:splätze)?)|(?:verdrängen|verdrängt) (?:[\p{L}]+ ){0,3}(?:einheimische|deutsche|arbeiter))/u,
+    variants: [
+      ["Welche Stelle meinst du konkret, und wie wurde sie vergeben?", "Ein Arbeitsvertrag hat keine Spalte für „den anderen weggenommen“.", "Wer sich auf eine Stelle bewirbt, ist für mich kein Sündenbock. Ich beende das Gespräch hier."],
+      ["Was ist in dem Betrieb passiert, auf den du dich beziehst?", "Ein Betrieb hat eine Personalabteilung. Die Herkunft der Bewerbenden ist keine Erklärung für jede Entscheidung.", "Über Arbeitsbedingungen kann man reden. Menschen wegen ihrer Herkunft die Schuld zu geben, mache ich nicht mit."],
+      ["Woran erkennst du, dass die Herkunft bei der Stellenvergabe eine Rolle gespielt hat?", "Eine Bewerbung ist kein Überfall auf den Stellenmarkt.", "Ich finde faire Chancen für alle wichtig. Die pauschale Schuldzuweisung diskutiere ich nicht weiter."],
+      ["Geht es dir um einen konkreten Arbeitsplatz oder um die Lage in einer ganzen Branche?", "Für die Jobsuche wäre eine gute Stelle hilfreicher als ein bequemer Sündenbock.", "Menschen dürfen sich unabhängig von ihrer Herkunft auf Arbeit bewerben. Für mich ist das Thema hier beendet."],
+    ],
+  },
+  {
+    topic: "Herkunft und pauschaler Verdacht",
+    anchors: /(?:ausländer|migrant|geflüchtet|flüchtling|zugewander|zuwander)/u,
+    cues: /(?:sind (?:doch |ja |eh |sowieso )?(?:alle |nur |immer )?kriminell|werden (?:doch |ja |eh |sowieso )?(?:alle |nur |immer )?kriminell|alles (?:verbrecher|kriminelle))/u,
+    variants: [
+      ["Von welchem konkreten Vorfall sprichst du, und was weißt du darüber?", "Herkunft ist kein Vorstrafenregister.", "Ich rede über Taten, wenn es um Taten geht. Über einen Generalverdacht gegen Menschen diskutiere ich nicht weiter."],
+      ["Wie kommst du von dem Fall, den du meinst, zu einem Urteil über so viele Menschen?", "Eine ganze Gruppe passt schlecht auf die Anklagebank für eine einzelne Tat.", "Für mich zählt, was eine Person getan hat. An pauschalen Verdächtigungen beteilige ich mich nicht."],
+      ["Würdest du denselben Maßstab anlegen, wenn die beschuldigte Person hier aufgewachsen wäre?", "Mit einem einzigen Etikett hat noch niemand einen Fall aufgeklärt.", "Ich möchte, dass für alle dieselben Maßstäbe gelten. Damit beende ich das Gespräch für mich."],
+      ["Welche Information würde dir helfen, einen konkreten Fall von einer Vermutung zu unterscheiden?", "Für einen Vorwurf braucht es einen Grund. Ein Sammelbegriff ist keiner.", "Ich halte diesen Generalverdacht für unfair. Mehr möchte ich dazu nicht sagen."],
+    ],
+  },
+  {
     topic: "Herkunft und Zugehörigkeit",
-    match: /(?=.*\b(?:akzent|herkunft|ausländer\w*|migrant\w*|geflüchtet\w*)\b)(?=.*(?:gehört|gehören|raus|nichts verloren|nicht hierher|dazugehör))/u,
+    anchors: /(?:akzent|herkunft|ausländer|migrant|geflüchtet|flüchtling|zugewander|zuwander|aus dem ausland)/u,
+    cues: /(?:gehört hier nicht|gehören hier nicht|nicht hierher|nicht zu uns|sollen raus|müssen raus|nichts verloren|nach hause schicken|(?:gehört|gehören) nicht (?:hier|dazu))/u,
     variants: [
       ["Was hat die Herkunft für dich damit zu tun, wer hier dazugehören kann?", "Zugehörigkeit gibt es zum Glück auch ohne Herkunftsstempel.", "Ich lasse Menschen nicht nach Herkunft aussortieren. Für mich endet das Gespräch hier."],
       ["Welche konkrete Situation meinst du, wenn du sagst, jemand gehöre nicht hierher?", "Ein Akzent ist kein Türsteher.", "Hier ist Platz für Menschen mit verschiedenen Geschichten. Über ihr Dazugehören diskutiere ich nicht weiter."],
@@ -74,7 +97,8 @@ const strategyTopics = [
   },
   {
     topic: "Geschlecht und Können",
-    match: /(?=.*(?:frauen|mädchen|männer|jungen))(?=.*(?:können kein|können nicht|zu emotional|gehören in die küche|führung ungeeignet|nicht für technik))/u,
+    anchors: /\b(?:frauen?|mädchen|männer|mann|jungen?|jungs)\b/u,
+    cues: /(?:könn(?:en|t) (?:doch |eh |sowieso )?(?:kein|nicht)|zu emotional|in die küche|zum führen ungeeignet|nicht für (?:technik|führung)|für (?:technik|führung) (?:nicht geeignet|ungeeignet)|(?:keine ahnung|nichts verstehen) von (?:technik|computern)|(?:sind|ist) schlecht (?:in|mit) (?:technik|mathe|computern))/u,
     variants: [
       ["An welcher konkreten Fähigkeit machst du das fest?", "Kompetenz hat sich für deine Schublade leider zu breit gemacht.", "Ich beurteile Menschen nach ihrem Können. Für mich ist die Diskussion hier beendet."],
       ["Welche Anforderung hat diese Aufgabe, die du mit Geschlecht verbindest?", "Für gute Arbeit zählt Können. Das Etikett kann zu Hause bleiben.", "Ich möchte nicht, dass Geschlecht über Chancen entscheidet. Ich gehe darauf nicht weiter ein."],
@@ -84,7 +108,7 @@ const strategyTopics = [
   },
   {
     topic: "Abwertung als Witz",
-    match: /(?:war doch nur (?:ein witz|spaß)|verstehst? keinen spaß|wird man doch mal lachen dürfen|witz muss man abkönnen)/u,
+    cues: /(?:\bnur (?:ein(?:en)? )?(?:witz|scherz|spa[ßs]s?)\b|verstehst? (?:auch )?keinen spa[ßs]s?|war (?:doch )?(?:witzig|lustig) gemeint|wird man doch mal lachen dürfen|witz muss man abkönnen)/u,
     variants: [
       ["Was daran sollte für die Person lustig sein, über die gesprochen wurde?", "Wenn der Witz einen Fußabtreter braucht, fehlt ihm eine Pointe.", "Ich mag Humor, der Menschen nicht kleinmacht. Ich lasse das Gespräch hier enden."],
       ["Wie könnte der Spruch bei jemandem ankommen, der selbst gemeint ist?", "Die Pointe darf gern auf eigenen Beinen stehen.", "Für mich war die Grenze überschritten. Ich rede darüber jetzt nicht weiter."],
@@ -94,7 +118,8 @@ const strategyTopics = [
   },
   {
     topic: "Geld und Sozialleistungen",
-    match: /(?=.*(?:bürgergeld|sozialhilfe|arbeitslos\w*))(?=.*(?:alle faul|nur faul|zu faul|wollen nicht arbeiten|wollen einfach nicht arbeiten|liegen uns auf der tasche))/u,
+    anchors: /(?:bürgergeld|sozialhilfe|hartz\s*(?:4|iv)|arbeitslos|grundsicherung)/u,
+    cues: /(?:\bfaul(?:e|er|en|es)?\b|w(?:ollen|ill) (?:\w+ ){0,4}nicht arbeiten|(?:liegen|lebt|leben) (?:uns )?auf (?:der|unserer) tasche|sich (?:nur )?durchfüttern lassen)/u,
     variants: [
       ["Welche konkrete Person oder Situation meinst du mit dieser Behauptung?", "Ein Kontostand taugt schlecht als Charakterzeugnis.", "Ich möchte Menschen mit wenig Geld respektvoll behandeln. Über pauschale Urteile rede ich nicht weiter."],
       ["Was weißt du in dem konkreten Fall darüber, welche Arbeit die Person sucht?", "Für ein gutes Urteil braucht es mehr als einen Blick aufs Konto.", "Für mich verdienen Menschen auch ohne Arbeit Respekt. Ich schließe das Gespräch hier ab."],
@@ -104,7 +129,8 @@ const strategyTopics = [
   },
   {
     topic: "Behinderung und Teilhabe",
-    match: /(?=.*(?:behindert\w*|behinderung|rollstuhl))(?=.*(?:kann doch nichts|können doch nichts|kann sowieso nicht|können sowieso nicht|gehören hier nicht|sollten nicht mitmachen|nur eine last))/u,
+    anchors: /(?:behinder|rollstuhl|beeinträchtig)/u,
+    cues: /(?:k(?:ann|önnen) (?:doch |sowieso |eh )?(?:nichts|nicht)|(?:sollte[n]?|darf|dürfen) nicht mitmachen|gehören hier nicht|nur eine last|schaffen? das (?:doch |eh |sowieso )?nicht)/u,
     variants: [
       ["Was wäre nötig, damit die Person bei der konkreten Aufgabe mitmachen kann?", "Eine Stufe verrät mehr über den Eingang als über die Person davor.", "Für mich hat jede Person eine faire Chance verdient. Ich beende das Gespräch an dieser Stelle."],
       ["Hast du die Person gefragt, wie sie selbst gern teilnehmen möchte?", "Über jemanden hinwegzuplanen ist keine besonders barrierefreie Art zu denken.", "Ich respektiere, dass die Person selbst bestimmt, was sie sich zutraut. Damit schließe ich ab."],
@@ -114,7 +140,7 @@ const strategyTopics = [
   },
   {
     topic: "Widerspruch und Meinungsfreiheit",
-    match: /(?:sagen darf man|darf man nichts mehr sagen|wird man ja wohl noch sagen dürfen|man darf ja nichts mehr sagen)/u,
+    cues: /(?:darf (?:man|ich|doch|ja)?\s*(?:ja |doch |überhaupt |heute |hier )*(?:gar )?nichts mehr sagen|wird man (?:ja |doch )?(?:wohl )?noch sagen dürfen|darf man denn (?:überhaupt )?noch was sagen|sagen wird man (?:das )?(?:ja |wohl |doch )?noch dürfen)/u,
     variants: [
       ["Welche konkrete Aussage möchtest du machen, und welchen Widerspruch hast du erlebt?", "Meinungsfreiheit hat keinen Knopf zum Stummschalten der anderen.", "Deine Meinung steht dir frei, meine auch. Für mich ist dieses Gespräch hier zu Ende."],
       ["Über welchen Satz reden wir gerade, und was genau ist danach passiert?", "Wer das Wort nimmt, kann auch mit einem Echo rechnen.", "Mir ist ein respektvoller Austausch wichtig. Ich lasse es an dieser Stelle gut sein."],
@@ -126,8 +152,12 @@ const strategyTopics = [
 
 function strategyAnswer(statement, variation = 0) {
   if (typeof statement !== 'string') return null;
-  const normalized = statement.normalize('NFC').toLocaleLowerCase('de-DE');
-  const match = strategyTopics.find(entry => entry.match.test(normalized));
+  const normalized = statement.normalize('NFC').toLocaleLowerCase('de-DE')
+    .replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
+  // A concrete group and a claim take precedence over a stock phrase such as
+  // “war nur Spaß” that can appear at the end of an otherwise specific claim.
+  const match = strategyTopics.find(entry => entry.anchors?.test(normalized) && entry.cues.test(normalized))
+    ?? strategyTopics.find(entry => !entry.anchors && entry.cues.test(normalized));
   if (!match) return null;
 
   const offset = Number.isSafeInteger(variation) ? variation : 0;
@@ -146,20 +176,23 @@ function strategyAnswer(statement, variation = 0) {
 }
 
 const demoAnswer = function demoAnswer(statement, variation = 0) {
-  const t = statement.toLocaleLowerCase('de'); let topic = 'Allgemeine Gesprächshilfe'; let choices;
+  const t = statement.toLocaleLowerCase('de');
   if (/(umbringen|abstechen|verprügeln|erschlagen|schlag dich|bring dich um|töte|töten|gewalt androhen)/u.test(t)) return { ...pack('Ich möchte Abstand. Können wir das Gespräch jetzt beenden?', 'Ich beende dieses Gespräch jetzt und hole mir Unterstützung.', 'Stopp. Ich möchte nicht bedroht werden und gehe jetzt.', '', false), care: 'Du schuldest niemandem eine schlagfertige Reaktion.', safety: 'Bei Bedrohung: Halte Abstand und suche Unterstützung bei einer sicheren Person. Du musst das Gespräch nicht fortsetzen.', topic: 'Selbstschutz', matched: true };
   const tailored = strategyAnswer(statement, variation);
   if (tailored) return tailored;
-  if (/(ausländer|geflüchtet|flüchtling|migrant|asyl)/u.test(t) && /(arbeit|job|arbeitspl)/u.test(t)) {
-    topic = 'Herkunft und Arbeit'; choices = [pack('Welche konkrete Situation meinst du, und warum ist dabei die Herkunft entscheidend?', 'Ein Arbeitsvertrag fragt nach Fähigkeiten. Vielleicht sollten wir das auch tun.', 'Ich möchte Menschen nach ihrem Handeln beurteilen, nicht nach ihrer Herkunft.', 'Was wäre aus deiner Sicht eine faire Lösung für alle Beteiligten?'), pack('Was genau ist passiert? Lass uns über den konkreten Fall sprechen.', 'Herkunft ist kein Beruf. Über Fähigkeiten lässt sich besser reden.', 'Über Arbeit können wir reden. Pauschale Abwertung von Menschen möchte ich dabei nicht mittragen.', 'Welches konkrete Problem möchtest du lösen?')];
-  } else if (/(frau|mädchen|männer|jungen)/u.test(t) && /(technik|können|gehören|küche|führen)/u.test(t)) {
-    topic = 'Geschlechterklischees'; choices = [pack('Was hat die Fähigkeit einer Person für dich mit ihrem Geschlecht zu tun?', 'Talent hat offenbar deinen Geschlechterfragebogen noch nicht ausgefüllt.', 'Ich traue Menschen etwas zu. Ihr Geschlecht entscheidet nicht über ihre Fähigkeiten.', 'Können wir auf die konkrete Person und ihre Erfahrung schauen?'), pack('An welche konkrete Erfahrung denkst du dabei?', 'Kompetenz passt zum Glück in mehr als zwei Schubladen.', 'Ich möchte, dass Menschen nach ihren Fähigkeiten beurteilt werden.', 'Welche Fähigkeiten sind hier tatsächlich wichtig?')];
-  } else if (/(wird man|wird wohl|darf man|darf wohl|nichts mehr|nicht mehr)/u.test(t) && /(sagen|meinung)/u.test(t)) {
-    topic = 'Meinung und Widerspruch'; choices = [pack('Was möchtest du denn konkret sagen, und welche Reaktion stört dich daran?', 'Meinungsfreiheit gibt es zum Glück auch für die Antwort.', 'Du darfst deine Meinung sagen. Und ich darf widersprechen, wenn dabei Menschen abgewertet werden.', 'Können wir über die konkrete Aussage sprechen?'), pack('Geht es darum, etwas sagen zu dürfen, oder darum, dafür keinen Widerspruch zu bekommen?', 'Eine Meinung ist kein Mikrofon mit Stummschaltung für alle anderen.', 'Ich möchte offen reden können und dabei respektvoll miteinander umgehen.', 'Was ist dir an dem Thema besonders wichtig?')];
-  } else if (/(nur spaß|nur spass|war.*witz|humor|witz)/u.test(t)) {
-    topic = 'Abwertung als Witz'; choices = [pack('Was genau findest du daran lustig?', 'Ein guter Witz kommt auch ohne jemanden als Fußabtreter aus.', 'Ich lache gern. Wenn Menschen dabei abgewertet werden, möchte ich das nicht mittragen.', 'Geht der Witz auch, ohne jemanden kleinzumachen?'), pack('Wie könnte der Witz bei der Person ankommen, über die du sprichst?', 'Mein Humor ist dabei. Die Abwertung darf gern draußen bleiben.', 'Spaß soll verbinden. Hier geht er für mich auf Kosten anderer.', 'Was wolltest du mit dem Witz ausdrücken?')];
-  } else choices = [pack('Wie meinst du das genau? Ich möchte verstehen, worauf du hinauswillst.', 'Mein Kopf hat bei dem Spruch gerade auf Pause gedrückt.', 'Ich möchte darüber gerade nicht weiterreden.', 'Welche konkrete Erfahrung steckt für dich dahinter?'), pack('Kannst du mir ein konkretes Beispiel nennen?', 'Große Aussage. Die passt kaum durch die Tür.', 'Ich sehe das anders und lasse es dabei.', 'Worüber sind wir uns einig, und wo unterscheiden wir uns?')];
-  return { ...choices[Math.abs(variation) % choices.length], topic, matched: topic !== 'Allgemeine Gesprächshilfe' };
+  // No sufficiently specific rule matched. Do not guess which group or
+  // intention the speaker meant. Cycle through distinct general strategies.
+  const choices = [
+    pack('Wie meinst du das genau? Ich möchte verstehen, worauf du hinauswillst.', 'Mein Kopf hat bei dem Spruch gerade auf Pause gedrückt.', 'Ich möchte darüber gerade nicht weiterreden.', 'Welche konkrete Erfahrung steckt für dich dahinter?'),
+    pack('Kannst du mir ein konkretes Beispiel nennen?', 'Große Aussage. Die passt kaum durch die Tür.', 'Ich sehe das anders und lasse es dabei.', 'Wie war das in diesem einen Fall?'),
+    pack('Woran machst du das fest?', 'Das Urteil kam schneller als die Begründung.', 'Diese Aussage möchte ich so nicht mittragen.', 'Was würde deine Einschätzung ändern?'),
+    pack('Gilt das für dich immer, oder gibt es Ausnahmen?', 'Für so viele Fälle ist die Schublade ganz schön klein.', 'Ich komme da zu einem anderen Schluss. Mehr möchte ich dazu jetzt nicht sagen.', 'Wo würdest du eine Ausnahme machen?'),
+    pack('Was möchtest du mit dem Satz sagen?', 'Der Satz hat mich gerade aus dem Takt gebracht.', 'Ich lasse das Thema jetzt ruhen.', 'Was ist dir dabei am wichtigsten?'),
+    pack('Meinst du damit etwas, das du selbst erlebt hast?', 'Bei der Abkürzung sind wohl ein paar Details auf der Strecke geblieben.', 'Ich mache an dieser Stelle eine Pause vom Gespräch.', 'Was ist genau passiert?'),
+  ];
+  const offset = Number.isSafeInteger(variation) ? variation : 0;
+  const index = ((offset % choices.length) + choices.length) % choices.length;
+  return { ...choices[index], topic: 'Allgemeine Gesprächshilfe', matched: false };
 };
 const pack = (green, yellow, red, bridge, close = true) => ({
   green: { answer: green, bridge, why: 'Eine konkrete Frage schafft Raum zum Nachdenken.' },
@@ -175,7 +208,8 @@ async function demoFetch(path, options) {
 (() => {
 'use strict';
 const $ = id => document.getElementById(id);
-const state = { tone: 'green', mode: 'demo', aiReady: false, providerName: '', busy: false, result: null, statement: '', material: '', variation: 0, consent: false, micConsent: false, recognition: null, recording: false, shake: false, motionSeen: false, lastMotion: null, lastShake: 0, peaks: [], details: false, requestId: 0 };
+const state = { tone: 'green', mode: 'demo', aiReady: false, providerName: '', busy: false, result: null, statement: '', material: '', nextVariation: { green: 0, yellow: 0, red: 0 }, consent: false, micConsent: false, recognition: null, recording: false, shake: false, motionSeen: false, lastMotion: null, lastShake: 0, peaks: [], details: false, requestId: 0 };
+function resetVariants() { state.nextVariation = { green: 0, yellow: 0, red: 0 }; }
 const toneLabels = { green: 'Gespräch öffnen', yellow: 'Freches Statement', red: 'Klare Grenze · Gespräch beenden' };
 let toastTimer, sensorTimer;
 function toast(text) { $('toast').textContent = text; clearTimeout(toastTimer); toastTimer = setTimeout(() => { $('toast').textContent = ''; }, 4200); }
@@ -197,7 +231,7 @@ function invalidate() {
   state.result = null; $('result-card').hidden = true; state.details = false; $('result-extra').hidden = true; $('result-tools').hidden = true; $('detail-button').setAttribute('aria-expanded', 'false');
   $('result-card').classList.remove('has-result'); $('result-card').classList.add('stale'); $('result-tip').textContent = 'Eingabe geändert. Finde eine neue Antwort.'; $('result-topic').hidden = true;
 }
-function inputChanged() { $('char-count').textContent = $('statement').value.length.toLocaleString('de-DE') + ' / 1.200'; state.variation = 0; invalidate(); message(); }
+function inputChanged() { $('char-count').textContent = $('statement').value.length.toLocaleString('de-DE') + ' / 1.200'; invalidate(); message(); }
 $('statement').addEventListener('input', inputChanged);
 $('statement').addEventListener('keydown', e => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); requestAnswer(); } });
 document.querySelectorAll('[data-example]').forEach(b => b.addEventListener('click', () => { $('statement').value = b.dataset.example; inputChanged(); $('statement').focus(); }));
@@ -208,9 +242,8 @@ function setTone(tone) {
   });
 }
 document.querySelectorAll('[data-tone]').forEach(button => button.addEventListener('click', () => {
-  const repeat = state.tone === button.dataset.tone && Boolean(state.result);
   setTone(button.dataset.tone);
-  requestAnswer(repeat);
+  requestAnswer();
 }));
 function renderResult() {
   const r = state.result; if (!r) return; const selected = r[state.tone];
@@ -223,30 +256,33 @@ function renderResult() {
   $('result-tools').hidden = false; $('bridge-text').textContent = selected.bridge; $('why-text').textContent = selected.why; $('safety-text').textContent = r.safety || ''; $('safety-text').hidden = !r.safety;
   if (r.safety) state.details = true; $('result-extra').hidden = !state.details; $('detail-button').setAttribute('aria-expanded', String(state.details));
 }
-async function requestAnswer(next = false) {
+async function requestAnswer() {
   if (state.busy || state.recording) return; const statement = $('statement').value.trim();
   if (!statement) { message('Schreib oder sprich zuerst die Aussage ein.'); $('statement').focus(); return; }
   if (statement.length > 1200) { message('Bitte kürze die Aussage auf höchstens 1.200 Zeichen.'); return; }
   if (state.mode === 'ai' && !state.aiReady) { message('Die KI ist noch nicht verbunden. Du kannst in der Zwischenzeit die Demo nutzen.'); return; }
   if (state.mode === 'ai' && !state.consent) { $('ai-consent-text').textContent = 'Für die Antwort werden deine Aussage und ' + (state.material ? 'deine Werkstatthinweise' : 'gegebenenfalls ergänzte Werkstatthinweise') + ' an ' + (state.providerName || 'den verbundenen KI Dienst') + ' gesendet. Bitte verzichte auf Namen und persönliche Daten.'; openDialog('ai-dialog'); return; }
-  if (next) state.variation++; else if (state.statement !== statement) state.variation = 0;
+  if (state.statement !== statement) resetVariants();
+  const tone = state.tone;
+  const variation = state.nextVariation[tone];
   state.statement = statement; const id = ++state.requestId; const mode = state.mode; const material = state.material;
   const controller = new AbortController(); const timeout = setTimeout(() => controller.abort(), 30000);
   message(); setBusy(true); if (state.mode === 'ai') message('Worte werden gesucht …');
   try {
-    const response = await demoFetch('/api/answer', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ statement, mode, consent: state.consent, material, variation: state.variation }), signal: controller.signal });
+    const response = await demoFetch('/api/answer', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ statement, mode, consent: state.consent, material, variation }), signal: controller.signal });
     const data = await response.json(); if (!response.ok) throw new Error(data.error || 'Die Antwort konnte gerade nicht gefunden werden.');
     if (!data.green?.answer || !data.yellow?.answer || !data.red?.answer) throw new Error('Es kam keine vollständige Antwort an. Bitte versuche es erneut.');
     if (id !== state.requestId || $('statement').value.trim() !== statement || state.mode !== mode || state.material !== material) { message('Deine Eingabe wurde geändert. Finde dazu bitte eine neue Antwort.'); return; }
+    state.nextVariation[tone] = variation + 1;
     message(); state.result = data; renderResult();
     if (window.matchMedia('(max-width: 720px)').matches) $('result-card').scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'nearest' });
   } catch (error) { if (id === state.requestId) message(error.name === 'AbortError' ? 'Die Antwort dauert gerade zu lange. Bitte versuche es noch einmal.' : error.message); }
   finally { clearTimeout(timeout); if (id === state.requestId) setBusy(false); }
 }
-$('answer-form').addEventListener('submit', e => { e.preventDefault(); requestAnswer(); }); $('another-button').addEventListener('click', () => requestAnswer(true));
+$('answer-form').addEventListener('submit', e => { e.preventDefault(); requestAnswer(); }); $('another-button').addEventListener('click', () => requestAnswer());
 $('detail-button').addEventListener('click', () => { state.details = !state.details; $('result-extra').hidden = !state.details; $('detail-button').setAttribute('aria-expanded', String(state.details)); });
 $('copy-button').addEventListener('click', async () => { if (!state.result) return; try { await navigator.clipboard.writeText(state.result[state.tone].answer); toast('Antwort kopiert.'); } catch { toast('Kopieren ist hier nicht verfügbar. Markiere den Antworttext zum Kopieren.'); } });
-function chooseMode(mode) { if (state.busy) { toast('Bitte warte kurz auf die laufende Antwort.'); return; } if (mode === 'ai' && !state.aiReady) { toast('Die KI ist noch nicht eingerichtet. Die Demo ist nutzbar.'); return; } if (mode !== state.mode) { state.mode = mode; state.variation = 0; invalidate(); renderMode(); message(); } $('mode-dialog').close(); }
+function chooseMode(mode) { if (state.busy) { toast('Bitte warte kurz auf die laufende Antwort.'); return; } if (mode === 'ai' && !state.aiReady) { toast('Die KI ist noch nicht eingerichtet. Die Demo ist nutzbar.'); return; } if (mode !== state.mode) { state.mode = mode; resetVariants(); invalidate(); renderMode(); message(); } $('mode-dialog').close(); }
 $('choose-demo').addEventListener('click', () => chooseMode('demo')); $('choose-ai').addEventListener('click', () => chooseMode('ai'));
 $('ai-confirm').addEventListener('click', () => { state.consent = true; $('ai-dialog').close(); requestAnswer(); }); $('ai-use-demo').addEventListener('click', () => { $('ai-dialog').close(); chooseMode('demo'); requestAnswer(); });
 const storageKey = 'geile-antwort-material-v1';
@@ -278,7 +314,7 @@ function motion(event) {
   if (delta < 17) return; state.peaks = state.peaks.filter(t => now - t < 800); if (!state.peaks.length || now - state.peaks[state.peaks.length - 1] > 80) state.peaks.push(now);
   if (state.peaks.length < 3) return; state.peaks = []; state.lastShake = now;
   if (!$('statement').value.trim()) { message('Schreib oder sprich zuerst die Aussage ein.'); return; }
-  requestAnswer(Boolean(state.result));
+  requestAnswer();
 }
 $('shake-button').addEventListener('click', async () => {
   if (state.shake) { disableShake(); toast('Schütteln ausgeschaltet.'); return; }
