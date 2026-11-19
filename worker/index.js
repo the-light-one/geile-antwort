@@ -34,13 +34,15 @@ export default { async fetch(request, env = {}) {
     const bytes = new Uint8Array(size); let offset = 0; for (const p of parts) { bytes.set(p, offset); offset += p.length; } body = JSON.parse(new TextDecoder().decode(bytes));
   } catch { return json({ error: 'Die Eingabe konnte nicht gelesen werden.' }, 400); }
   if (!body || typeof body.statement !== 'string' || !body.statement.trim() || body.statement.length > 1200 || !['demo', 'ai'].includes(body.mode) || (body.material !== undefined && (typeof body.material !== 'string' || body.material.length > 12000))) return json({ error: 'Bitte eine Aussage mit höchstens 1.200 Zeichen eingeben.' }, 400);
-  if (body.mode === 'demo') return json({ ...demoAnswer(body.statement, Number.isSafeInteger(body.variation) ? body.variation : 0), mode: 'demo' });
+  const variation = Number.isSafeInteger(body.variation) ? body.variation : 0;
+  const reference = demoAnswer(body.statement, variation);
+  if (body.mode === 'demo') return json({ ...reference, mode: 'demo' });
   if (!env.HF_TOKEN) return json({ error: 'Die KI ist noch nicht verbunden. Du kannst die Demo mit vorbereiteten Antworten ausprobieren.', code: 'AI_NOT_CONFIGURED' }, 503);
   if (body.consent !== true) return json({ error: 'Bitte bestätige zuerst die Verarbeitung durch Hugging Face und Featherless AI.' }, 400);
   const id = request.headers.get('oai-authenticated-user-id') || request.headers.get('CF-Connecting-IP') || 'private-site';
   if (rateLimited(id)) return json({ error: 'Kurz durchatmen: Bitte warte eine Minute vor der nächsten KI Anfrage.' }, 429);
   try {
-    const upstream = await fetch('https://router.huggingface.co/v1/chat/completions', { method: 'POST', signal: AbortSignal.timeout(22000), headers: { Authorization: 'Bearer ' + env.HF_TOKEN, 'Content-Type': 'application/json' }, body: JSON.stringify({ model, max_tokens: 850, temperature: 0.35, messages: [{ role: 'system', content: systemPrompt + ' JSON keys: green, yellow, red (each has answer, bridge, why), care, safety.' }, { role: 'user', content: JSON.stringify({ statement: body.statement.trim(), editorialPrinciples: principles, userMaterial: body.material || '', variation: Number.isSafeInteger(body.variation) ? body.variation : 0 }) }] }) });
+    const upstream = await fetch('https://router.huggingface.co/v1/chat/completions', { method: 'POST', signal: AbortSignal.timeout(22000), headers: { Authorization: 'Bearer ' + env.HF_TOKEN, 'Content-Type': 'application/json' }, body: JSON.stringify({ model, max_tokens: 850, temperature: 0.55, messages: [{ role: 'system', content: systemPrompt + ' JSON keys: green, yellow, red (each has answer, bridge, why), care, safety.' }, { role: 'user', content: JSON.stringify({ statement: body.statement.trim(), editorialPrinciples: principles, userMaterial: body.material || '', variation, referenceStyle: reference.matched && !reference.safety ? { green: reference.green.answer, yellow: reference.yellow.answer, red: reference.red.answer } : undefined }) }] }) });
     if (!upstream.ok) return json({ error: 'Die KI ist gerade nicht erreichbar. Bitte versuche es später noch einmal oder wechsle bewusst zur Demo.' }, 502);
     const result = await upstream.json();
     const choice = result.choices?.[0];
