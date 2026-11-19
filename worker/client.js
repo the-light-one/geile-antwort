@@ -2,6 +2,9 @@ export const clientScript = String.raw`(() => {
 'use strict';
 const $ = id => document.getElementById(id);
 const state = { tone: 'green', mode: 'demo', aiReady: false, localAI: false, providerName: '', busy: false, result: null, statement: '', material: '', nextVariation: { green: 0, yellow: 0, red: 0 }, consent: false, micConsent: false, recognition: null, recording: false, shake: false, motionSeen: false, lastMotion: null, lastShake: 0, peaks: [], details: false, requestId: 0 };
+const localConsent = new Set();
+let models = [], model;
+const currentModel = () => models.find(item => item.id === model);
 function resetVariants() { state.nextVariation = { green: 0, yellow: 0, red: 0 }; }
 const toneLabels = { green: 'Gespräch öffnen', yellow: 'Freches Statement', red: 'Klare Grenze · Gespräch beenden' };
 let toastTimer, sensorTimer, localRequest;
@@ -19,10 +22,28 @@ function renderMode() {
   $('mode-description').textContent = state.mode === 'demo' ? 'Die Demo wählt aus vorbereiteten Antworten und allgemeinen Gesprächshilfen. Sie erzeugt keine individuelle KI Antwort.' : 'Die KI formuliert zu deiner Aussage drei Antwortstile. Prüfe selbst, welche Antwort zur Situation passt.';
   $('ai-status').textContent = state.aiReady ? 'KI Zugang verbunden' + (state.providerName ? ' · ' + state.providerName : '') + '. Du kannst individuelle Antworten ausprobieren.' : 'Der KI Zugang ist noch nicht eingerichtet. Die Demo ist bereits nutzbar.';
   if (!state.localAI) return;
-  $('mode-open').textContent = state.mode === 'ai' ? 'Modus: Lokale KI' : 'KI im Browser ausprobieren';
-  $('choose-ai').textContent = 'Lokale KI';
-  $('mode-description').textContent = state.mode === 'demo' ? 'Die Demo verwendet vorbereitete Antworten.' : 'Die lokale KI wählt den passenden vorbereiteten Satz zur Aussage und zur gewählten Farbe.';
-  $('ai-status').textContent = state.aiReady ? 'Beim ersten KI Aufruf lädt der Browser mehrere hundert MB Modelldateien.' : 'Dieser Browser bietet kein WebGPU. Die Demo funktioniert weiterhin.';
+  $('mode-open').textContent = state.mode === 'ai' ? currentModel().name + ' · Wechseln' : 'KI auswählen';
+  $('choose-ai').hidden = true;
+  $('mode-description').textContent = 'Die KI wählt aus vorbereiteten Sätzen den passenden zur Aussage und zur Ampelfarbe.';
+  $('ai-status').textContent = state.aiReady ? 'Das ausgewählte Modell lädt beim ersten Einsatz. Deine Eingabe bleibt auf dem Gerät.' : 'Dieser Browser bietet kein nutzbares WebGPU. Die Demo ist verfügbar.';
+  for (const button of $('local-model-options').children) {
+    button.setAttribute('aria-pressed', String(state.mode === 'ai' && model === button.dataset.model));
+  }
+}
+function showModelOptions() {
+  const options = $('local-model-options');
+  for (const item of models) {
+    const button = document.createElement('button');
+    const size = document.createElement('span');
+    button.type = 'button';
+    button.dataset.model = item.id;
+    button.disabled = !item.supported;
+    size.textContent = item.supported || !state.aiReady ? 'ca. ' + item.downloadMB + ' MB' : 'Grafikfunktion fehlt';
+    button.append(item.name, size);
+    button.addEventListener('click', () => chooseMode('ai', item.id));
+    options.append(button);
+  }
+  options.hidden = false;
 }
 function invalidate() {
   if (!state.result) return;
@@ -49,8 +70,8 @@ function renderResult() {
   $('bridge-section').hidden = state.tone !== 'green' || !selected.bridge || Boolean(r.safety);
   $('result-card').classList.remove('stale'); $('result-card').classList.add('has-result'); $('answer-text').classList.remove('empty'); $('answer-text').textContent = selected.answer;
   $('empty-detail').hidden = true; $('result-topic').hidden = false; $('result-topic').textContent = toneLabels[state.tone];
-  $('mode-badge').textContent = r.localSelection ? 'KI · lokal ausgewählt' : r.mode === 'ai' ? 'KI · individuelle Antwort' : 'Vorbereitete Antwort';
-  $('result-tip').textContent = r.localFallback ? 'Ohne KI Auswahl: vorbereiteter Vorschlag.' : r.localSelection || r.mode === 'demo' ? (r.matched ? r.topic : 'Allgemeiner Antwortvorschlag') : r.care;
+  $('mode-badge').textContent = r.localSelection ? (models.find(item => item.id === r.model)?.name || 'Lokale KI') : r.mode === 'ai' ? 'KI · individuelle Antwort' : 'Vorbereitete Antwort';
+  $('result-tip').textContent = r.localUnavailable ? 'Die lokale KI ist gerade nicht verfügbar.' : r.localFallback ? 'Vorbereiteter Vorschlag ohne KI Auswahl.' : r.localSelection || r.mode === 'demo' ? (r.matched ? r.topic : 'Allgemeiner Antwortvorschlag') : r.care;
   $('result-tools').hidden = false; $('bridge-text').textContent = selected.bridge; $('why-text').textContent = selected.why; $('safety-text').textContent = r.safety || ''; $('safety-text').hidden = !r.safety;
   if (r.safety) state.details = true; $('result-extra').hidden = !state.details; $('detail-button').setAttribute('aria-expanded', String(state.details));
 }
@@ -59,9 +80,12 @@ async function requestAnswer() {
   if (!statement) { message('Schreib oder sprich zuerst die Aussage ein.'); $('statement').focus(); return; }
   if (statement.length > 1200) { message('Bitte kürze die Aussage auf höchstens 1.200 Zeichen.'); return; }
   if (state.mode === 'ai' && !state.aiReady) { message('Die KI ist noch nicht verbunden. Du kannst in der Zwischenzeit die Demo nutzen.'); return; }
-  if (state.mode === 'ai' && !state.consent) {
-    if (state.localAI) {
-      $('ai-consent-text').textContent = 'Dein Browser lädt Llama 3.2 1B Instruct. Der erste Download umfasst mehrere hundert MB. Deine eingegebene Aussage bleibt dabei auf deinem Gerät.';
+  const local = state.mode === 'ai' && state.localAI;
+  const consent = local ? localConsent.has(model) : state.consent;
+  if (state.mode === 'ai' && !consent) {
+    if (local) {
+      const selected = currentModel();
+      $('ai-consent-text').textContent = 'Dein Browser lädt ' + selected.name + ' beim ersten Einsatz (ca. ' + selected.downloadMB + ' MB). Deine Aussage bleibt auf deinem Gerät.';
       $('ai-confirm').textContent = 'Modell laden und antworten';
     } else {
       $('ai-consent-text').textContent = 'Für die Antwort werden deine Aussage und deine optionalen Werkstatthinweise an ' + (state.providerName || 'den verbundenen KI Dienst') + ' gesendet. Bitte verzichte auf Namen und persönliche Daten.';
@@ -74,7 +98,6 @@ async function requestAnswer() {
   const variation = state.nextVariation[tone];
   state.statement = statement; const id = ++state.requestId; const mode = state.mode; const material = state.material;
   const controller = new AbortController();
-  const local = mode === 'ai' && state.localAI;
   if (local) {
     localRequest = controller;
     $('cancel-local-ai').hidden = false;
@@ -82,7 +105,7 @@ async function requestAnswer() {
   const timeout = setTimeout(() => controller.abort(), local ? 600000 : 30000);
   message(); setBusy(true); if (state.mode === 'ai') message('Worte werden gesucht …');
   try {
-    const response = await fetch('/api/answer', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ statement, mode, consent: state.consent, material, tone, variation }), signal: controller.signal }, text => { if (id === state.requestId && $('form-message').textContent !== text) message(text); });
+    const response = await fetch('/api/answer', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ statement, mode, consent, material, tone, variation, model: local ? model : undefined }), signal: controller.signal }, text => { if (id === state.requestId && $('form-message').textContent !== text) message(text); });
     const data = await response.json(); if (!response.ok) throw new Error(data.error || 'Die Antwort konnte gerade nicht gefunden werden.');
     if (!data[tone]?.answer) throw new Error('Es kam keine vollständige Antwort an. Bitte versuche es erneut.');
     if (id !== state.requestId || $('statement').value.trim() !== statement || state.mode !== mode || state.material !== material) { message('Deine Eingabe wurde geändert. Finde dazu bitte eine neue Antwort.'); return; }
@@ -103,9 +126,27 @@ $('cancel-local-ai')?.addEventListener('click', () => localRequest?.abort());
 $('answer-form').addEventListener('submit', e => { e.preventDefault(); requestAnswer(); }); $('another-button').addEventListener('click', () => requestAnswer());
 $('detail-button').addEventListener('click', () => { state.details = !state.details; $('result-extra').hidden = !state.details; $('detail-button').setAttribute('aria-expanded', String(state.details)); });
 $('copy-button').addEventListener('click', async () => { const answer = $('answer-text').textContent; if (!state.result || !answer) return; try { await navigator.clipboard.writeText(answer); toast('Antwort kopiert.'); } catch { toast('Kopieren ist hier nicht verfügbar. Markiere den Antworttext zum Kopieren.'); } });
-function chooseMode(mode) { if (state.busy) { toast('Bitte warte kurz auf die laufende Antwort.'); return; } if (mode === 'ai' && !state.aiReady) { toast('Die KI ist noch nicht eingerichtet. Die Demo ist nutzbar.'); return; } if (mode !== state.mode) { state.mode = mode; resetVariants(); invalidate(); renderMode(); message(); } $('mode-dialog').close(); }
+function chooseMode(mode, nextModel = model) {
+  if (state.busy) { toast('Bitte warte auf die laufende Antwort oder brich sie ab.'); return; }
+  if (mode === 'ai' && !state.aiReady) { toast('Die KI ist noch nicht eingerichtet. Die Demo ist nutzbar.'); return; }
+  if (mode !== state.mode || nextModel !== model) {
+    if (state.localAI && state.mode === 'ai') void fetch('/api/release');
+    state.mode = mode;
+    model = nextModel;
+    resetVariants();
+    invalidate();
+    renderMode();
+    message();
+  }
+  $('mode-dialog').close();
+}
 $('choose-demo').addEventListener('click', () => chooseMode('demo')); $('choose-ai').addEventListener('click', () => chooseMode('ai'));
-$('ai-confirm').addEventListener('click', () => { state.consent = true; $('ai-dialog').close(); requestAnswer(); }); $('ai-use-demo').addEventListener('click', () => { $('ai-dialog').close(); chooseMode('demo'); requestAnswer(); });
+$('ai-confirm').addEventListener('click', () => {
+  if (state.localAI) localConsent.add(model); else state.consent = true;
+  $('ai-dialog').close();
+  requestAnswer();
+});
+$('ai-use-demo').addEventListener('click', () => { $('ai-dialog').close(); chooseMode('demo'); requestAnswer(); });
 const storageKey = 'geile-antwort-material-v1';
 try { const saved = localStorage.getItem(storageKey); if (saved) { const parsed = JSON.parse(saved); if (typeof parsed.material === 'string' && parsed.material.length <= 12000) { state.material = parsed.material; $('remember-material').checked = true; } } } catch {}
 $('material-apply').addEventListener('click', () => { const text = $('material').value.trim(); if (text !== state.material) { state.material = text; state.consent = false; invalidate(); } try { if ($('remember-material').checked) localStorage.setItem(storageKey, JSON.stringify({ material: text })); else localStorage.removeItem(storageKey); } catch { $('material-message').textContent = 'Das Speichern auf diesem Gerät ist nicht möglich. Deine Hinweise bleiben für diese Sitzung übernommen.'; return; } $('studio-dialog').close(); toast(text ? 'Hinweise übernommen. Sie werden im KI Modus berücksichtigt.' : 'Die Werkstatt ist jetzt leer.'); });
@@ -146,5 +187,15 @@ $('shake-button').addEventListener('click', async () => {
   sensorTimer = setTimeout(() => { if (state.shake && !state.motionSeen) $('shake-note').textContent = 'Noch keine Sensordaten. Öffne die App direkt auf deinem Handy oder tippe auf eine Ampelfarbe.'; }, 4000);
 });
 document.addEventListener('visibilitychange', () => { state.peaks = []; state.lastMotion = null; if (document.hidden && state.recording) state.recognition?.stop(); });
-fetch('/api/status', { cache: 'no-store' }).then(r => { if (!r.ok) throw new Error(); return r.json(); }).then(data => { state.localAI = data.localAI === true; state.aiReady = data.aiReady === true; state.providerName = typeof data.providerName === 'string' ? data.providerName : ''; state.mode = state.aiReady && !state.localAI ? 'ai' : 'demo'; renderMode(); }).catch(() => { renderMode(); $('ai-status').textContent = 'Der Verbindungsstatus konnte nicht geprüft werden. Versuche es nach dem Neuladen erneut.'; });
+fetch('/api/status', { cache: 'no-store' }).then(r => { if (!r.ok) throw new Error(); return r.json(); }).then(data => {
+  state.localAI = data.localAI === true;
+  state.aiReady = data.aiReady === true;
+  state.providerName = typeof data.providerName === 'string' ? data.providerName : '';
+  state.mode = state.aiReady && !state.localAI ? 'ai' : 'demo';
+  if (state.localAI) {
+    models = data.models;
+    showModelOptions();
+  }
+  renderMode();
+}).catch(() => { renderMode(); $('ai-status').textContent = 'Der Verbindungsstatus konnte nicht geprüft werden. Versuche es nach dem Neuladen erneut.'; });
 })();`;

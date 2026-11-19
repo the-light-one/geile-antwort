@@ -35,6 +35,13 @@ body .tone-dot{width:26px;height:26px;background:var(--tone-stroke)}
 body .tone-sub{color:var(--tone-ink);white-space:normal;line-height:1.2;display:block}
 body .action{justify-content:center;margin-top:12px}
 body .action .shake{width:44px;min-height:44px}
+.local-model-options{display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:8px;margin:15px 0}
+.local-model-options button{border:1px solid var(--line);border-radius:10px;min-height:56px;padding:9px 12px;text-align:left;font-size:14px;font-weight:600}
+.local-model-options button span{display:block;color:var(--muted);font-size:13px;font-weight:400}
+.local-model-options button[aria-pressed=true]{background:var(--ink);color:white;border-color:var(--ink)}
+.local-model-options button[aria-pressed=true] span{color:inherit}
+.local-model-options button:focus-visible{outline:3px solid #635bda}
+.local-model-options button:disabled{cursor:default}
 </style>
 </head><body>
 <a class="skip" href="#statement">Zur Aussage springen</a>
@@ -56,10 +63,10 @@ body .action .shake{width:44px;min-height:44px}
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <dialog id="info-dialog"><div class="dialog-head"><h2>Wieder Worte finden.</h2><button type="button" class="close" data-close aria-label="Schließen">✕</button></div><p>Manchmal trifft dich ein Spruch völlig unvorbereitet. Diese App hilft dir, den ersten Schockmoment zu überwinden und einen eigenen Standpunkt hörbar zu machen.</p><h3>Drei Wege, zu antworten</h3><p><strong>Grün:</strong> ruhig und konkret nachfragen.<br><strong>Gelb:</strong> mit einer freundlichen Pointe kontern.<br><strong>Rot:</strong> klar und zugewandt eine Grenze setzen.</p><p>Die Farben stehen für deinen Antwortstil. Bei Bedrohungen geht deine Sicherheit vor. Du darfst ein Gespräch jederzeit beenden.</p><h3>Fachliche Orientierung</h3><a class="source-link" href="https://konterbunt.de/strategieguide/" target="_blank" rel="noopener noreferrer"><strong>KonterBUNT</strong><span>Strategien im Umgang mit Stammtischparolen</span></a><a class="source-link" href="https://www.amadeu-antonio-stiftung.de/modsupport/" target="_blank" rel="noopener noreferrer"><strong>ModSupport · Amadeu Antonio Stiftung</strong><span>Unterstützung gegen Hass im Netz</span></a><p style="font-size:12px">Die Angebote sind fachliche Orientierung. Es besteht keine Partnerschaft oder technische Anbindung. Die Demo verwendet eigene redaktionelle Beispiele.</p></dialog>
 <dialog id="studio-dialog"><div class="dialog-head"><h2>Deine Antwortwerkstatt</h2><button type="button" class="close" data-close aria-label="Schließen">✕</button></div><p>Hier kannst du eigene fachliche Hinweise und Beispiele ergänzen. Sie werden bei KI Antworten als zusätzlicher Kontext mitgegeben. Die Demo verändert sich dadurch nicht.</p><label for="material"><strong style="font-size:14px">Deine Hinweise und Beispielantworten</strong></label><textarea id="material" maxlength="12000" placeholder="Zum Beispiel: Wir möchten Pauschalisierungen auflösen und die Würde betroffener Menschen stärken. Gute Antworten aus unseren Workshops: …"></textarea><div class="studio-actions"><label class="file-label" for="material-file">Textdatei einlesen (.txt oder .md)</label><input id="material-file" type="file" accept=".txt,.md,text/plain,text/markdown" hidden><button id="material-clear" type="button" class="text-button">Hinweise löschen</button></div><label class="check-label"><input id="remember-material" type="checkbox"><span>Hinweise auf diesem Gerät speichern. Auf einem gemeinsam genutzten Gerät lieber ausgeschaltet lassen.</span></label><p class="muted-box">Ohne Speichern bleiben deine Hinweise nur bis zum Neuladen geöffnet. Bitte verwende Material, das du nutzen darfst, und füge keine personenbezogenen Daten ein.</p><p id="material-message" role="status" style="font-size:13px"></p><button id="material-apply" type="button" class="primary">Hinweise übernehmen</button></dialog>
-<dialog id="mode-dialog"><div class="dialog-head"><h2>Wie soll die App antworten?</h2><button type="button" class="close" data-close aria-label="Schließen">✕</button></div><div class="mode-options"><button id="choose-demo" type="button" aria-pressed="true">Demo</button><button id="choose-ai" type="button" aria-pressed="false">KI Antworten</button></div><p id="mode-description">Die Demo wählt aus vorbereiteten Antworten und allgemeinen Gesprächshilfen. Sie erzeugt keine individuelle KI Antwort.</p><p class="muted-box" id="ai-status">Der KI Zugang wird geprüft.</p><p>Built with Llama</p></dialog>
+<dialog id="mode-dialog"><div class="dialog-head"><h2>Wie soll die App antworten?</h2><button type="button" class="close" data-close aria-label="Schließen">✕</button></div><div class="mode-options"><button id="choose-demo" type="button" aria-pressed="true">Demo</button><button id="choose-ai" type="button" aria-pressed="false">KI Antworten</button></div><div class="local-model-options" id="local-model-options" role="group" aria-label="Lokale KI Modelle" hidden></div><p id="mode-description">Die Demo wählt aus vorbereiteten Antworten und allgemeinen Gesprächshilfen. Sie erzeugt keine individuelle KI Antwort.</p><p class="muted-box" id="ai-status">Der KI Zugang wird geprüft.</p></dialog>
 <dialog id="mic-dialog"><div class="dialog-head"><h2>Deine Aussage einsprechen</h2><button type="button" class="close" data-close aria-label="Schließen">✕</button></div><p>Sprich den Satz selbst ein. Die Aufnahme startet erst mit deiner Zustimmung und endet automatisch oder mit „Stoppen“.</p><p>Die Spracherkennung deines Browsers kann Audio an einen externen Sprachdienst übertragen. Bitte nenne keine Namen oder vertraulichen Angaben und zeichne andere Personen nicht ungefragt auf.</p><p>Du kannst den erkannten Text anschließend prüfen und bearbeiten. Eine Antwort wird erst erzeugt, wenn du auf „Antwort finden“ drückst.</p><button id="mic-confirm" type="button" class="primary">Spracherkennung starten</button></dialog>
 <dialog id="ai-dialog"><div class="dialog-head"><h2>Eine Antwort mit KI finden</h2><button type="button" class="close" data-close aria-label="Schließen">✕</button></div><p id="ai-consent-text">Für die Antwort werden deine Aussage und deine optionalen Hinweise an den verbundenen KI Dienst gesendet. Bitte verzichte auf Namen und persönliche Daten.</p><p>Der Browser kann die Modelldateien zwischenspeichern. Falls du den Cache löschst, lädt er sie erneut. Eine KI Antwort kann unpassend oder falsch sein.</p><button id="ai-confirm" type="button" class="primary">Zustimmen und Antwort finden</button><button id="ai-use-demo" type="button" class="text-button">Stattdessen die Demo nutzen</button></dialog>
-<dialog id="privacy-dialog"><div class="dialog-head"><h2>Daten & Transparenz</h2><button type="button" class="close" data-close aria-label="Schließen">✕</button></div><p><strong>Deine Eingabe:</strong> Die App speichert keine Gesprächshistorie. Die Eingabe wird auf deinem Gerät verarbeitet. Die Demo wählt dort vorbereitete Antworten aus.</p><p><strong>KI Modus:</strong> Nach deiner Zustimmung lädt dein Browser Llama 3.2 über WebLLM und Hugging Face. Das Modell wählt aus vorbereiteten Sätzen. Eingaben und Werkstatthinweise bleiben auf deinem Gerät.</p><p><strong>Mikrofon:</strong> Spracherkennung läuft nur, wenn du sie aktiv startest. Je nach Browser kann ein externer Sprachdienst Audio verarbeiten.</p><p><strong>Auf deinem Gerät:</strong> Nur wenn du es ausdrücklich auswählst, werden Werkstatthinweise lokal gespeichert. Du kannst sie in der Werkstatt wieder löschen.</p><p><strong>Schütteln:</strong> Der aktivierte Bewegungssensor wird im Browser ausgewertet. Die App sendet keine Bewegungsdaten an den Server.</p><p style="font-size:12px">Dies ist ein privater Entwicklungsprototyp. Antworten und Schutzmechanismen müssen vor einer öffentlichen Nutzung fachlich und technisch weiter geprüft werden.</p></dialog>
+<dialog id="privacy-dialog"><div class="dialog-head"><h2>Daten & Transparenz</h2><button type="button" class="close" data-close aria-label="Schließen">✕</button></div><p><strong>Deine Eingabe:</strong> Die App speichert keine Gesprächshistorie. Die Eingabe wird auf deinem Gerät verarbeitet. Die Demo wählt dort vorbereitete Antworten aus.</p><p><strong>KI Modus:</strong> Nach deiner Zustimmung lädt dein Browser das gewählte Modell über WebLLM und Hugging Face. Das Modell wählt aus vorbereiteten Sätzen. Eingaben und Werkstatthinweise bleiben auf deinem Gerät.</p><p><strong>Mikrofon:</strong> Spracherkennung läuft nur, wenn du sie aktiv startest. Je nach Browser kann ein externer Sprachdienst Audio verarbeiten.</p><p><strong>Auf deinem Gerät:</strong> Nur wenn du es ausdrücklich auswählst, werden Werkstatthinweise lokal gespeichert. Du kannst sie in der Werkstatt wieder löschen.</p><p><strong>Schütteln:</strong> Der aktivierte Bewegungssensor wird im Browser ausgewertet. Die App sendet keine Bewegungsdaten an den Server.</p><p style="font-size:12px">Dies ist ein privater Entwicklungsprototyp. Antworten und Schutzmechanismen müssen vor einer öffentlichen Nutzung fachlich und technisch weiter geprüft werden.</p></dialog>
 <script>// Eigene Antworttexte. Die Reihenfolge bevorzugt spezifische Themen.
 const strategyTopics = [
   {
@@ -200,6 +207,7 @@ const pack = (green, yellow, red, bridge, close = true) => ({
   red: { answer: close ? red + ' Damit ist das für mich gesagt.' : red, bridge: '', why: 'Du machst deinen Standpunkt deutlich und hältst an gegenseitigem Respekt fest.' },
   care: 'Du musst nicht perfekt antworten. Deine Haltung darf trotzdem hörbar werden.', safety: '',
 });
+const browserModels = {"llama":{"name":"Llama 3.2 1B","downloadMB":705,"f16":"Llama-3.2-1B-Instruct-q4f16_1-MLC","f32":"Llama-3.2-1B-Instruct-q4f32_1-MLC"},"qwen":{"name":"Qwen3.5 0.8B","downloadMB":447,"f16":"Qwen3.5-0.8B-q4f16_1-MLC","f32":"Qwen3.5-0.8B-q4f32_1-MLC"},"gemma":{"name":"Gemma 3 1B","downloadMB":602,"f16":"gemma3-1b-it-q4f16_1-MLC"}};
 const localAI = (function createBrowserAI({
   loadRuntime = () => import('https://cdn.jsdelivr.net/npm/@mlc-ai/web-llm@0.2.86/+esm'),
   getAdapter = () => navigator.gpu?.requestAdapter(),
@@ -224,25 +232,46 @@ const localAI = (function createBrowserAI({
     yellow: 'Eine kurze, schlagfertige Pointe als Aussage. Keine Frage oder Aufforderung zum Weiterreden.',
     red: 'Eine ruhige, klare Grenze in der Ich-Form. Schließe den Austausch ausdrücklich ab. Keine Frage.',
   };
-  let engine, session, workerFailure;
-  let lastStatement, lastMaterial, previous;
+  let engine, session, workerFailure, activeModel;
+  let lastStatement, lastMaterial, lastModel, previous;
 
   function resetEngine() {
     session?.close();
-    engine = session = workerFailure = undefined;
+    engine = session = workerFailure = activeModel = undefined;
   }
 
-  async function open(progress, signal) {
-    if (engine) return engine;
+  function release() {
+    resetEngine();
+    previous = undefined;
+  }
+
+  function modelVariant(model, adapter) {
+    return adapter ? model[adapter.features.has('shader-f16') ? 'f16' : 'f32'] : undefined;
+  }
+
+  async function status() {
+    let adapter;
+    try { adapter = await getAdapter(); } catch { /* The demo works without a GPU. */ }
+    const models = Object.entries(browserModels).map(([id, model]) => ({
+      id, name: model.name, downloadMB: model.downloadMB, supported: Boolean(modelVariant(model, adapter)),
+    }));
+    return { localAI: true, aiReady: Boolean(adapter), models };
+  }
+
+  async function open(model, progress, signal) {
+    if (engine && activeModel === model) return engine;
+    resetEngine();
     progress('Grafikunterstützung wird geprüft …');
     const adapter = await getAdapter();
     signal.throwIfAborted();
-    if (!adapter) throw new Error('Dieser Browser hat keinen nutzbaren WebGPU-Zugang. Wechsle zur Demo oder versuche es in einem aktuellen Browser mit aktivierter Hardwarebeschleunigung.');
-    const precision = adapter.features.has('shader-f16') ? 'f16' : 'f32';
-    const model = 'Llama-3.2-1B-Instruct-q4' + precision + '_1-MLC';
+    const selected = browserModels[model];
+    const variant = modelVariant(selected, adapter);
+    if (!variant) throw new Error('Die Grafikunterstützung für ' + selected.name + ' fehlt.');
     progress('KI-Laufzeit wird geladen …');
     const runtime = await loadRuntime();
     signal.throwIfAborted();
+    // Gemma's published configuration sets two mutually exclusive windows.
+    const chatOptions = model === 'gemma' ? { context_window_size: 2048, sliding_window_size: -1 } : undefined;
     session = startWorker();
     workerFailure = new Promise((_, reject) => {
       session.worker.addEventListener('error', () => {
@@ -250,15 +279,16 @@ const localAI = (function createBrowserAI({
       }, { once: true });
     });
     engine = await Promise.race([
-      runtime.CreateWebWorkerMLCEngine(session.worker, model, {
+      runtime.CreateWebWorkerMLCEngine(session.worker, variant, {
         initProgressCallback: ({ progress: fraction }) => {
           if (signal.aborted) return;
           const percent = Math.min(100, Math.max(0, Math.floor((fraction || 0) * 100)));
-          progress(percent === 100 ? 'Modell wird vorbereitet …' : 'Lokales Modell wird geladen … ' + percent + ' %');
+          progress(percent === 100 ? selected.name + ' wird vorbereitet …' : selected.name + ' wird geladen … ' + percent + ' %');
         },
-      }),
+      }, chatOptions),
       workerFailure,
     ]);
+    activeModel = model;
     return engine;
   }
 
@@ -275,20 +305,22 @@ const localAI = (function createBrowserAI({
     return options.filter(option => !previous[tone].includes(option[tone].answer)).slice(0, 4);
   }
 
-  async function answer({ statement, material = '', tone, reference, candidates = [reference], signal, progress }) {
+  async function answer({ statement, material = '', tone, model = 'llama', reference, candidates = [reference], signal, progress }) {
     if (!Object.hasOwn(styles, tone)) throw new Error('Wähle eine Ampelfarbe.');
+    if (!Object.hasOwn(browserModels, model)) throw new Error('Wähle ein verfügbares Modell.');
     signal.throwIfAborted();
     if (reference.safety) return { ...reference, mode: 'demo' };
-    if (statement !== lastStatement || material !== lastMaterial) {
+    if (!previous || statement !== lastStatement || material !== lastMaterial || model !== lastModel) {
       lastStatement = statement;
       lastMaterial = material;
+      lastModel = model;
       previous = { green: [], yellow: [], red: [] };
     }
     const options = pickOptions(candidates, tone);
     function select(option, withAI) {
       previous[tone].push(option[tone].answer);
       return withAI
-        ? { ...option, mode: 'ai', localSelection: true }
+        ? { ...option, mode: 'ai', localSelection: true, model }
         : { ...option, mode: 'demo', localFallback: true };
     }
     if (options.length < 2) return select(options[0] ?? reference, false);
@@ -302,8 +334,8 @@ const localAI = (function createBrowserAI({
       signal.addEventListener('abort', stop, { once: true });
     });
     try {
-      const llm = await Promise.race([open(progress, signal), cancelled]);
-      progress('Die lokale KI sucht den passendsten Vorschlag …');
+      const llm = await Promise.race([open(model, progress, signal), cancelled]);
+      progress(browserModels[model].name + ' sucht den passendsten Vorschlag …');
       const completion = await Promise.race([
         llm.chat.completions.create({
           messages: [
@@ -324,29 +356,33 @@ const localAI = (function createBrowserAI({
                 '\nWelche Nummer passt am besten? Nur die Nummer.',
             },
           ],
-          max_tokens: 8,
+          max_tokens: model === 'qwen' ? 16 : 8,
           temperature: 0,
+          ...(model === 'qwen' ? { extra_body: { enable_thinking: false } } : {}),
         }),
         workerFailure,
         cancelled,
       ]);
-      const content = completion?.choices?.[0]?.message?.content;
+      let content = completion?.choices?.[0]?.message?.content;
+      // WebLLM can include the empty thinking prefix in Qwen's returned text.
+      if (model === 'qwen' && typeof content === 'string') content = content.replace(/^\s*<think>\s*<\/think>/u, '');
       const index = typeof content === 'string' && /^[1-4]$/.test(content.trim())
         ? Number(content.trim()) - 1 : -1;
       return options[index] ? select(options[index], true) : select(options[0], false);
     } catch (error) {
       resetEngine();
       if (signal.aborted) throw signal.reason;
-      return select(options[0], false);
+      return { ...select(options[0], false), localUnavailable: true };
     } finally {
       signal.removeEventListener('abort', stop);
     }
   }
 
-  return { answer };
+  return { answer, release, status };
 })();
 async function browserFetch(path, options, progress) {
-  if (path === '/api/status') return Response.json({ localAI: true, aiReady: typeof navigator !== 'undefined' && Boolean(navigator.gpu) });
+  if (path === '/api/status') return Response.json(await localAI.status());
+  if (path === '/api/release') { localAI.release(); return new Response(null, { status: 204 }); }
   const input = JSON.parse(options.body);
   const reference = demoAnswer(input.statement, input.variation);
   if (input.mode === 'demo') return Response.json({ ...reference, mode: 'demo' });
@@ -358,6 +394,9 @@ async function browserFetch(path, options, progress) {
 'use strict';
 const $ = id => document.getElementById(id);
 const state = { tone: 'green', mode: 'demo', aiReady: false, localAI: false, providerName: '', busy: false, result: null, statement: '', material: '', nextVariation: { green: 0, yellow: 0, red: 0 }, consent: false, micConsent: false, recognition: null, recording: false, shake: false, motionSeen: false, lastMotion: null, lastShake: 0, peaks: [], details: false, requestId: 0 };
+const localConsent = new Set();
+let models = [], model;
+const currentModel = () => models.find(item => item.id === model);
 function resetVariants() { state.nextVariation = { green: 0, yellow: 0, red: 0 }; }
 const toneLabels = { green: 'Gespräch öffnen', yellow: 'Freches Statement', red: 'Klare Grenze · Gespräch beenden' };
 let toastTimer, sensorTimer, localRequest;
@@ -375,10 +414,28 @@ function renderMode() {
   $('mode-description').textContent = state.mode === 'demo' ? 'Die Demo wählt aus vorbereiteten Antworten und allgemeinen Gesprächshilfen. Sie erzeugt keine individuelle KI Antwort.' : 'Die KI formuliert zu deiner Aussage drei Antwortstile. Prüfe selbst, welche Antwort zur Situation passt.';
   $('ai-status').textContent = state.aiReady ? 'KI Zugang verbunden' + (state.providerName ? ' · ' + state.providerName : '') + '. Du kannst individuelle Antworten ausprobieren.' : 'Der KI Zugang ist noch nicht eingerichtet. Die Demo ist bereits nutzbar.';
   if (!state.localAI) return;
-  $('mode-open').textContent = state.mode === 'ai' ? 'Modus: Lokale KI' : 'KI im Browser ausprobieren';
-  $('choose-ai').textContent = 'Lokale KI';
-  $('mode-description').textContent = state.mode === 'demo' ? 'Die Demo verwendet vorbereitete Antworten.' : 'Die lokale KI wählt den passenden vorbereiteten Satz zur Aussage und zur gewählten Farbe.';
-  $('ai-status').textContent = state.aiReady ? 'Beim ersten KI Aufruf lädt der Browser mehrere hundert MB Modelldateien.' : 'Dieser Browser bietet kein WebGPU. Die Demo funktioniert weiterhin.';
+  $('mode-open').textContent = state.mode === 'ai' ? currentModel().name + ' · Wechseln' : 'KI auswählen';
+  $('choose-ai').hidden = true;
+  $('mode-description').textContent = 'Die KI wählt aus vorbereiteten Sätzen den passenden zur Aussage und zur Ampelfarbe.';
+  $('ai-status').textContent = state.aiReady ? 'Das ausgewählte Modell lädt beim ersten Einsatz. Deine Eingabe bleibt auf dem Gerät.' : 'Dieser Browser bietet kein nutzbares WebGPU. Die Demo ist verfügbar.';
+  for (const button of $('local-model-options').children) {
+    button.setAttribute('aria-pressed', String(state.mode === 'ai' && model === button.dataset.model));
+  }
+}
+function showModelOptions() {
+  const options = $('local-model-options');
+  for (const item of models) {
+    const button = document.createElement('button');
+    const size = document.createElement('span');
+    button.type = 'button';
+    button.dataset.model = item.id;
+    button.disabled = !item.supported;
+    size.textContent = item.supported || !state.aiReady ? 'ca. ' + item.downloadMB + ' MB' : 'Grafikfunktion fehlt';
+    button.append(item.name, size);
+    button.addEventListener('click', () => chooseMode('ai', item.id));
+    options.append(button);
+  }
+  options.hidden = false;
 }
 function invalidate() {
   if (!state.result) return;
@@ -405,8 +462,8 @@ function renderResult() {
   $('bridge-section').hidden = state.tone !== 'green' || !selected.bridge || Boolean(r.safety);
   $('result-card').classList.remove('stale'); $('result-card').classList.add('has-result'); $('answer-text').classList.remove('empty'); $('answer-text').textContent = selected.answer;
   $('empty-detail').hidden = true; $('result-topic').hidden = false; $('result-topic').textContent = toneLabels[state.tone];
-  $('mode-badge').textContent = r.localSelection ? 'KI · lokal ausgewählt' : r.mode === 'ai' ? 'KI · individuelle Antwort' : 'Vorbereitete Antwort';
-  $('result-tip').textContent = r.localFallback ? 'Ohne KI Auswahl: vorbereiteter Vorschlag.' : r.localSelection || r.mode === 'demo' ? (r.matched ? r.topic : 'Allgemeiner Antwortvorschlag') : r.care;
+  $('mode-badge').textContent = r.localSelection ? (models.find(item => item.id === r.model)?.name || 'Lokale KI') : r.mode === 'ai' ? 'KI · individuelle Antwort' : 'Vorbereitete Antwort';
+  $('result-tip').textContent = r.localUnavailable ? 'Die lokale KI ist gerade nicht verfügbar.' : r.localFallback ? 'Vorbereiteter Vorschlag ohne KI Auswahl.' : r.localSelection || r.mode === 'demo' ? (r.matched ? r.topic : 'Allgemeiner Antwortvorschlag') : r.care;
   $('result-tools').hidden = false; $('bridge-text').textContent = selected.bridge; $('why-text').textContent = selected.why; $('safety-text').textContent = r.safety || ''; $('safety-text').hidden = !r.safety;
   if (r.safety) state.details = true; $('result-extra').hidden = !state.details; $('detail-button').setAttribute('aria-expanded', String(state.details));
 }
@@ -415,9 +472,12 @@ async function requestAnswer() {
   if (!statement) { message('Schreib oder sprich zuerst die Aussage ein.'); $('statement').focus(); return; }
   if (statement.length > 1200) { message('Bitte kürze die Aussage auf höchstens 1.200 Zeichen.'); return; }
   if (state.mode === 'ai' && !state.aiReady) { message('Die KI ist noch nicht verbunden. Du kannst in der Zwischenzeit die Demo nutzen.'); return; }
-  if (state.mode === 'ai' && !state.consent) {
-    if (state.localAI) {
-      $('ai-consent-text').textContent = 'Dein Browser lädt Llama 3.2 1B Instruct. Der erste Download umfasst mehrere hundert MB. Deine eingegebene Aussage bleibt dabei auf deinem Gerät.';
+  const local = state.mode === 'ai' && state.localAI;
+  const consent = local ? localConsent.has(model) : state.consent;
+  if (state.mode === 'ai' && !consent) {
+    if (local) {
+      const selected = currentModel();
+      $('ai-consent-text').textContent = 'Dein Browser lädt ' + selected.name + ' beim ersten Einsatz (ca. ' + selected.downloadMB + ' MB). Deine Aussage bleibt auf deinem Gerät.';
       $('ai-confirm').textContent = 'Modell laden und antworten';
     } else {
       $('ai-consent-text').textContent = 'Für die Antwort werden deine Aussage und deine optionalen Werkstatthinweise an ' + (state.providerName || 'den verbundenen KI Dienst') + ' gesendet. Bitte verzichte auf Namen und persönliche Daten.';
@@ -430,7 +490,6 @@ async function requestAnswer() {
   const variation = state.nextVariation[tone];
   state.statement = statement; const id = ++state.requestId; const mode = state.mode; const material = state.material;
   const controller = new AbortController();
-  const local = mode === 'ai' && state.localAI;
   if (local) {
     localRequest = controller;
     $('cancel-local-ai').hidden = false;
@@ -438,7 +497,7 @@ async function requestAnswer() {
   const timeout = setTimeout(() => controller.abort(), local ? 600000 : 30000);
   message(); setBusy(true); if (state.mode === 'ai') message('Worte werden gesucht …');
   try {
-    const response = await browserFetch('/api/answer', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ statement, mode, consent: state.consent, material, tone, variation }), signal: controller.signal }, text => { if (id === state.requestId && $('form-message').textContent !== text) message(text); });
+    const response = await browserFetch('/api/answer', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ statement, mode, consent, material, tone, variation, model: local ? model : undefined }), signal: controller.signal }, text => { if (id === state.requestId && $('form-message').textContent !== text) message(text); });
     const data = await response.json(); if (!response.ok) throw new Error(data.error || 'Die Antwort konnte gerade nicht gefunden werden.');
     if (!data[tone]?.answer) throw new Error('Es kam keine vollständige Antwort an. Bitte versuche es erneut.');
     if (id !== state.requestId || $('statement').value.trim() !== statement || state.mode !== mode || state.material !== material) { message('Deine Eingabe wurde geändert. Finde dazu bitte eine neue Antwort.'); return; }
@@ -459,9 +518,27 @@ $('cancel-local-ai')?.addEventListener('click', () => localRequest?.abort());
 $('answer-form').addEventListener('submit', e => { e.preventDefault(); requestAnswer(); }); $('another-button').addEventListener('click', () => requestAnswer());
 $('detail-button').addEventListener('click', () => { state.details = !state.details; $('result-extra').hidden = !state.details; $('detail-button').setAttribute('aria-expanded', String(state.details)); });
 $('copy-button').addEventListener('click', async () => { const answer = $('answer-text').textContent; if (!state.result || !answer) return; try { await navigator.clipboard.writeText(answer); toast('Antwort kopiert.'); } catch { toast('Kopieren ist hier nicht verfügbar. Markiere den Antworttext zum Kopieren.'); } });
-function chooseMode(mode) { if (state.busy) { toast('Bitte warte kurz auf die laufende Antwort.'); return; } if (mode === 'ai' && !state.aiReady) { toast('Die KI ist noch nicht eingerichtet. Die Demo ist nutzbar.'); return; } if (mode !== state.mode) { state.mode = mode; resetVariants(); invalidate(); renderMode(); message(); } $('mode-dialog').close(); }
+function chooseMode(mode, nextModel = model) {
+  if (state.busy) { toast('Bitte warte auf die laufende Antwort oder brich sie ab.'); return; }
+  if (mode === 'ai' && !state.aiReady) { toast('Die KI ist noch nicht eingerichtet. Die Demo ist nutzbar.'); return; }
+  if (mode !== state.mode || nextModel !== model) {
+    if (state.localAI && state.mode === 'ai') void browserFetch('/api/release');
+    state.mode = mode;
+    model = nextModel;
+    resetVariants();
+    invalidate();
+    renderMode();
+    message();
+  }
+  $('mode-dialog').close();
+}
 $('choose-demo').addEventListener('click', () => chooseMode('demo')); $('choose-ai').addEventListener('click', () => chooseMode('ai'));
-$('ai-confirm').addEventListener('click', () => { state.consent = true; $('ai-dialog').close(); requestAnswer(); }); $('ai-use-demo').addEventListener('click', () => { $('ai-dialog').close(); chooseMode('demo'); requestAnswer(); });
+$('ai-confirm').addEventListener('click', () => {
+  if (state.localAI) localConsent.add(model); else state.consent = true;
+  $('ai-dialog').close();
+  requestAnswer();
+});
+$('ai-use-demo').addEventListener('click', () => { $('ai-dialog').close(); chooseMode('demo'); requestAnswer(); });
 const storageKey = 'geile-antwort-material-v1';
 try { const saved = localStorage.getItem(storageKey); if (saved) { const parsed = JSON.parse(saved); if (typeof parsed.material === 'string' && parsed.material.length <= 12000) { state.material = parsed.material; $('remember-material').checked = true; } } } catch {}
 $('material-apply').addEventListener('click', () => { const text = $('material').value.trim(); if (text !== state.material) { state.material = text; state.consent = false; invalidate(); } try { if ($('remember-material').checked) localStorage.setItem(storageKey, JSON.stringify({ material: text })); else localStorage.removeItem(storageKey); } catch { $('material-message').textContent = 'Das Speichern auf diesem Gerät ist nicht möglich. Deine Hinweise bleiben für diese Sitzung übernommen.'; return; } $('studio-dialog').close(); toast(text ? 'Hinweise übernommen. Sie werden im KI Modus berücksichtigt.' : 'Die Werkstatt ist jetzt leer.'); });
@@ -502,5 +579,15 @@ $('shake-button').addEventListener('click', async () => {
   sensorTimer = setTimeout(() => { if (state.shake && !state.motionSeen) $('shake-note').textContent = 'Noch keine Sensordaten. Öffne die App direkt auf deinem Handy oder tippe auf eine Ampelfarbe.'; }, 4000);
 });
 document.addEventListener('visibilitychange', () => { state.peaks = []; state.lastMotion = null; if (document.hidden && state.recording) state.recognition?.stop(); });
-browserFetch('/api/status', { cache: 'no-store' }).then(r => { if (!r.ok) throw new Error(); return r.json(); }).then(data => { state.localAI = data.localAI === true; state.aiReady = data.aiReady === true; state.providerName = typeof data.providerName === 'string' ? data.providerName : ''; state.mode = state.aiReady && !state.localAI ? 'ai' : 'demo'; renderMode(); }).catch(() => { renderMode(); $('ai-status').textContent = 'Der Verbindungsstatus konnte nicht geprüft werden. Versuche es nach dem Neuladen erneut.'; });
+browserFetch('/api/status', { cache: 'no-store' }).then(r => { if (!r.ok) throw new Error(); return r.json(); }).then(data => {
+  state.localAI = data.localAI === true;
+  state.aiReady = data.aiReady === true;
+  state.providerName = typeof data.providerName === 'string' ? data.providerName : '';
+  state.mode = state.aiReady && !state.localAI ? 'ai' : 'demo';
+  if (state.localAI) {
+    models = data.models;
+    showModelOptions();
+  }
+  renderMode();
+}).catch(() => { renderMode(); $('ai-status').textContent = 'Der Verbindungsstatus konnte nicht geprüft werden. Versuche es nach dem Neuladen erneut.'; });
 })();</script></body></html>
