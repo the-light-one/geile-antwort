@@ -1,0 +1,5 @@
+name = "geile-antwort"
+main = "worker/index.js"
+compatibility_date = "2026-11-19"
+workers_dev = true
+preview_urls = false
