@@ -1,3 +1,5 @@
+import { strategyAnswer } from './strategies.js';
+
 // Eigene redaktionelle Inhalte. Externe Angebote sind Orientierung, keine Partner.
 export const principles = [
   { id: 'wuerde', text: 'Menschen nicht auf Gruppenzugehörigkeiten reduzieren. Abwertung widersprechen, ohne selbst Menschen abzuwerten. Betroffene und Zuhörende mitdenken.' },
@@ -12,7 +14,7 @@ Gib genau drei verschiedene, direkt aussprechbare Antworten in Alltagssprache:
 green: ruhig und nachfragend. Eine offene, konkrete Frage, kein verkapptes Verhör.
 yellow: frech und schlagfertig. Ein freches, pointiertes Statement ohne Rückfrage oder Einladung zum Weiterreden. Keine Beleidigung, keine Bloßstellung, kein Sarkasmus gegen Betroffene.
 red: ruhig und unmissverständlich das Gespräch beenden. Eine Grenze formulieren und den Austausch ausdrücklich abschließen. Keine Rückfrage und kein Angebot zum Weiterreden.
-Jede Antwort: maximal zwei Sätze, möglichst 12 bis 30 Wörter, niemals mehr als 45 Wörter. Keine Einleitung wie „Du könntest sagen“, keine äußeren Anführungszeichen. Möglichst keine Bindestriche. Keine langen Erklärungen.
+Jede Antwort: maximal zwei Sätze, möglichst 12 bis 30 Wörter, niemals mehr als 45 Wörter. Keine Einleitung wie „Du könntest sagen“, keine äußeren Anführungszeichen. Möglichst keine Bindestriche. Keine langen Erklärungen. Greife ein konkretes Detail aus der Aussage auf. Wähle bei einer neuen Variante einen anderen Gedanken oder ein anderes Bild, statt nur dieselbe Antwort umzuformulieren.
 bridge ist nur bei green eine optionale Anschlussfrage und bei yellow und red leer. Zu jeder Antwort: why (ein knapper Satz zur gewählten Strategie).
 Zusätzlich: care (kurzer stärkender Satz an die nutzende Person), safety (leer, außer wenn konkreter Selbstschutz relevant ist).
 Bei konkreten Drohungen, akuter Bedrohung oder Gewaltandrohungen: alle drei Antworten ruhig, klar und ohne Humor; safety rät zu Abstand und Unterstützung. Nie zum Austragen eines Streits ermutigen. Keine Notrufnummern erfinden.
@@ -35,6 +37,8 @@ export const pack = (green, yellow, red, bridge, close = true) => ({
 export function demoAnswer(statement, variation = 0) {
   const t = statement.toLocaleLowerCase('de'); let topic = 'Allgemeine Gesprächshilfe'; let choices;
   if (/(umbringen|abstechen|verprügeln|erschlagen|schlag dich|bring dich um|töte|töten|gewalt androhen)/u.test(t)) return { ...pack('Ich möchte Abstand. Können wir das Gespräch jetzt beenden?', 'Ich beende dieses Gespräch jetzt und hole mir Unterstützung.', 'Stopp. Ich möchte nicht bedroht werden und gehe jetzt.', '', false), care: 'Du schuldest niemandem eine schlagfertige Reaktion.', safety: 'Bei Bedrohung: Halte Abstand und suche Unterstützung bei einer sicheren Person. Du musst das Gespräch nicht fortsetzen.', topic: 'Selbstschutz', matched: true };
+  const tailored = strategyAnswer(statement, variation);
+  if (tailored) return tailored;
   if (/(ausländer|geflüchtet|flüchtling|migrant|asyl)/u.test(t) && /(arbeit|job|arbeitspl)/u.test(t)) {
     topic = 'Herkunft und Arbeit'; choices = [pack('Welche konkrete Situation meinst du, und warum ist dabei die Herkunft entscheidend?', 'Ein Arbeitsvertrag fragt nach Fähigkeiten. Vielleicht sollten wir das auch tun.', 'Ich möchte Menschen nach ihrem Handeln beurteilen, nicht nach ihrer Herkunft.', 'Was wäre aus deiner Sicht eine faire Lösung für alle Beteiligten?'), pack('Was genau ist passiert? Lass uns über den konkreten Fall sprechen.', 'Herkunft ist kein Beruf. Über Fähigkeiten lässt sich besser reden.', 'Über Arbeit können wir reden. Pauschale Abwertung von Menschen möchte ich dabei nicht mittragen.', 'Welches konkrete Problem möchtest du lösen?')];
   } else if (/(frau|mädchen|männer|jungen)/u.test(t) && /(technik|können|gehören|küche|führen)/u.test(t)) {
