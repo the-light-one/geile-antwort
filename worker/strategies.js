@@ -1,8 +1,31 @@
 // Eigene Antworttexte. Die Reihenfolge bevorzugt spezifische Themen.
 const strategyTopics = [
   {
+    topic: "Herkunft und Arbeit",
+    anchors: /(?:ausländer|migrant|geflüchtet|flüchtling|zugewander|zuwander|aus dem ausland)/u,
+    cues: /(?:nehm(?:en|t) (?:[\p{L}]+ ){0,4}(?:jobs?|arbeit(?:splätze)?) weg|klau(?:en|t) (?:[\p{L}]+ ){0,4}(?:jobs?|arbeit(?:splätze)?)|(?:verdrängen|verdrängt) (?:[\p{L}]+ ){0,3}(?:einheimische|deutsche|arbeiter))/u,
+    variants: [
+      ["Welche Stelle meinst du konkret, und wie wurde sie vergeben?", "Ein Arbeitsvertrag hat keine Spalte für „den anderen weggenommen“.", "Wer sich auf eine Stelle bewirbt, ist für mich kein Sündenbock. Ich beende das Gespräch hier."],
+      ["Was ist in dem Betrieb passiert, auf den du dich beziehst?", "Ein Betrieb hat eine Personalabteilung. Die Herkunft der Bewerbenden ist keine Erklärung für jede Entscheidung.", "Über Arbeitsbedingungen kann man reden. Menschen wegen ihrer Herkunft die Schuld zu geben, mache ich nicht mit."],
+      ["Woran erkennst du, dass die Herkunft bei der Stellenvergabe eine Rolle gespielt hat?", "Eine Bewerbung ist kein Überfall auf den Stellenmarkt.", "Ich finde faire Chancen für alle wichtig. Die pauschale Schuldzuweisung diskutiere ich nicht weiter."],
+      ["Geht es dir um einen konkreten Arbeitsplatz oder um die Lage in einer ganzen Branche?", "Für die Jobsuche wäre eine gute Stelle hilfreicher als ein bequemer Sündenbock.", "Menschen dürfen sich unabhängig von ihrer Herkunft auf Arbeit bewerben. Für mich ist das Thema hier beendet."],
+    ],
+  },
+  {
+    topic: "Herkunft und pauschaler Verdacht",
+    anchors: /(?:ausländer|migrant|geflüchtet|flüchtling|zugewander|zuwander)/u,
+    cues: /(?:sind (?:doch |ja |eh |sowieso )?(?:alle |nur |immer )?kriminell|werden (?:doch |ja |eh |sowieso )?(?:alle |nur |immer )?kriminell|alles (?:verbrecher|kriminelle))/u,
+    variants: [
+      ["Von welchem konkreten Vorfall sprichst du, und was weißt du darüber?", "Herkunft ist kein Vorstrafenregister.", "Ich rede über Taten, wenn es um Taten geht. Über einen Generalverdacht gegen Menschen diskutiere ich nicht weiter."],
+      ["Wie kommst du von dem Fall, den du meinst, zu einem Urteil über so viele Menschen?", "Eine ganze Gruppe passt schlecht auf die Anklagebank für eine einzelne Tat.", "Für mich zählt, was eine Person getan hat. An pauschalen Verdächtigungen beteilige ich mich nicht."],
+      ["Würdest du denselben Maßstab anlegen, wenn die beschuldigte Person hier aufgewachsen wäre?", "Mit einem einzigen Etikett hat noch niemand einen Fall aufgeklärt.", "Ich möchte, dass für alle dieselben Maßstäbe gelten. Damit beende ich das Gespräch für mich."],
+      ["Welche Information würde dir helfen, einen konkreten Fall von einer Vermutung zu unterscheiden?", "Für einen Vorwurf braucht es einen Grund. Ein Sammelbegriff ist keiner.", "Ich halte diesen Generalverdacht für unfair. Mehr möchte ich dazu nicht sagen."],
+    ],
+  },
+  {
     topic: "Herkunft und Zugehörigkeit",
-    match: /(?=.*\b(?:akzent|herkunft|ausländer\w*|migrant\w*|geflüchtet\w*)\b)(?=.*(?:gehört|gehören|raus|nichts verloren|nicht hierher|dazugehör))/u,
+    anchors: /(?:akzent|herkunft|ausländer|migrant|geflüchtet|flüchtling|zugewander|zuwander|aus dem ausland)/u,
+    cues: /(?:gehört hier nicht|gehören hier nicht|nicht hierher|nicht zu uns|sollen raus|müssen raus|nichts verloren|nach hause schicken|(?:gehört|gehören) nicht (?:hier|dazu))/u,
     variants: [
       ["Was hat die Herkunft für dich damit zu tun, wer hier dazugehören kann?", "Zugehörigkeit gibt es zum Glück auch ohne Herkunftsstempel.", "Ich lasse Menschen nicht nach Herkunft aussortieren. Für mich endet das Gespräch hier."],
       ["Welche konkrete Situation meinst du, wenn du sagst, jemand gehöre nicht hierher?", "Ein Akzent ist kein Türsteher.", "Hier ist Platz für Menschen mit verschiedenen Geschichten. Über ihr Dazugehören diskutiere ich nicht weiter."],
@@ -12,7 +35,8 @@ const strategyTopics = [
   },
   {
     topic: "Geschlecht und Können",
-    match: /(?=.*(?:frauen|mädchen|männer|jungen))(?=.*(?:können kein|können nicht|zu emotional|gehören in die küche|führung ungeeignet|nicht für technik))/u,
+    anchors: /\b(?:frauen?|mädchen|männer|mann|jungen?|jungs)\b/u,
+    cues: /(?:könn(?:en|t) (?:doch |eh |sowieso )?(?:kein|nicht)|zu emotional|in die küche|zum führen ungeeignet|nicht für (?:technik|führung)|für (?:technik|führung) (?:nicht geeignet|ungeeignet)|(?:keine ahnung|nichts verstehen) von (?:technik|computern)|(?:sind|ist) schlecht (?:in|mit) (?:technik|mathe|computern))/u,
     variants: [
       ["An welcher konkreten Fähigkeit machst du das fest?", "Kompetenz hat sich für deine Schublade leider zu breit gemacht.", "Ich beurteile Menschen nach ihrem Können. Für mich ist die Diskussion hier beendet."],
       ["Welche Anforderung hat diese Aufgabe, die du mit Geschlecht verbindest?", "Für gute Arbeit zählt Können. Das Etikett kann zu Hause bleiben.", "Ich möchte nicht, dass Geschlecht über Chancen entscheidet. Ich gehe darauf nicht weiter ein."],
@@ -22,7 +46,7 @@ const strategyTopics = [
   },
   {
     topic: "Abwertung als Witz",
-    match: /(?:war doch nur (?:ein witz|spaß)|verstehst? keinen spaß|wird man doch mal lachen dürfen|witz muss man abkönnen)/u,
+    cues: /(?:\bnur (?:ein(?:en)? )?(?:witz|scherz|spa[ßs]s?)\b|verstehst? (?:auch )?keinen spa[ßs]s?|war (?:doch )?(?:witzig|lustig) gemeint|wird man doch mal lachen dürfen|witz muss man abkönnen)/u,
     variants: [
       ["Was daran sollte für die Person lustig sein, über die gesprochen wurde?", "Wenn der Witz einen Fußabtreter braucht, fehlt ihm eine Pointe.", "Ich mag Humor, der Menschen nicht kleinmacht. Ich lasse das Gespräch hier enden."],
       ["Wie könnte der Spruch bei jemandem ankommen, der selbst gemeint ist?", "Die Pointe darf gern auf eigenen Beinen stehen.", "Für mich war die Grenze überschritten. Ich rede darüber jetzt nicht weiter."],
@@ -32,7 +56,8 @@ const strategyTopics = [
   },
   {
     topic: "Geld und Sozialleistungen",
-    match: /(?=.*(?:bürgergeld|sozialhilfe|arbeitslos\w*))(?=.*(?:alle faul|nur faul|zu faul|wollen nicht arbeiten|wollen einfach nicht arbeiten|liegen uns auf der tasche))/u,
+    anchors: /(?:bürgergeld|sozialhilfe|hartz\s*(?:4|iv)|arbeitslos|grundsicherung)/u,
+    cues: /(?:\bfaul(?:e|er|en|es)?\b|w(?:ollen|ill) (?:\w+ ){0,4}nicht arbeiten|(?:liegen|lebt|leben) (?:uns )?auf (?:der|unserer) tasche|sich (?:nur )?durchfüttern lassen)/u,
     variants: [
       ["Welche konkrete Person oder Situation meinst du mit dieser Behauptung?", "Ein Kontostand taugt schlecht als Charakterzeugnis.", "Ich möchte Menschen mit wenig Geld respektvoll behandeln. Über pauschale Urteile rede ich nicht weiter."],
       ["Was weißt du in dem konkreten Fall darüber, welche Arbeit die Person sucht?", "Für ein gutes Urteil braucht es mehr als einen Blick aufs Konto.", "Für mich verdienen Menschen auch ohne Arbeit Respekt. Ich schließe das Gespräch hier ab."],
@@ -42,7 +67,8 @@ const strategyTopics = [
   },
   {
     topic: "Behinderung und Teilhabe",
-    match: /(?=.*(?:behindert\w*|behinderung|rollstuhl))(?=.*(?:kann doch nichts|können doch nichts|kann sowieso nicht|können sowieso nicht|gehören hier nicht|sollten nicht mitmachen|nur eine last))/u,
+    anchors: /(?:behinder|rollstuhl|beeinträchtig)/u,
+    cues: /(?:k(?:ann|önnen) (?:doch |sowieso |eh )?(?:nichts|nicht)|(?:sollte[n]?|darf|dürfen) nicht mitmachen|gehören hier nicht|nur eine last|schaffen? das (?:doch |eh |sowieso )?nicht)/u,
     variants: [
       ["Was wäre nötig, damit die Person bei der konkreten Aufgabe mitmachen kann?", "Eine Stufe verrät mehr über den Eingang als über die Person davor.", "Für mich hat jede Person eine faire Chance verdient. Ich beende das Gespräch an dieser Stelle."],
       ["Hast du die Person gefragt, wie sie selbst gern teilnehmen möchte?", "Über jemanden hinwegzuplanen ist keine besonders barrierefreie Art zu denken.", "Ich respektiere, dass die Person selbst bestimmt, was sie sich zutraut. Damit schließe ich ab."],
@@ -52,7 +78,7 @@ const strategyTopics = [
   },
   {
     topic: "Widerspruch und Meinungsfreiheit",
-    match: /(?:sagen darf man|darf man nichts mehr sagen|wird man ja wohl noch sagen dürfen|man darf ja nichts mehr sagen)/u,
+    cues: /(?:darf (?:man|ich|doch|ja)?\s*(?:ja |doch |überhaupt |heute |hier )*(?:gar )?nichts mehr sagen|wird man (?:ja |doch )?(?:wohl )?noch sagen dürfen|darf man denn (?:überhaupt )?noch was sagen|sagen wird man (?:das )?(?:ja |wohl |doch )?noch dürfen)/u,
     variants: [
       ["Welche konkrete Aussage möchtest du machen, und welchen Widerspruch hast du erlebt?", "Meinungsfreiheit hat keinen Knopf zum Stummschalten der anderen.", "Deine Meinung steht dir frei, meine auch. Für mich ist dieses Gespräch hier zu Ende."],
       ["Über welchen Satz reden wir gerade, und was genau ist danach passiert?", "Wer das Wort nimmt, kann auch mit einem Echo rechnen.", "Mir ist ein respektvoller Austausch wichtig. Ich lasse es an dieser Stelle gut sein."],
@@ -64,8 +90,12 @@ const strategyTopics = [
 
 export function strategyAnswer(statement, variation = 0) {
   if (typeof statement !== 'string') return null;
-  const normalized = statement.normalize('NFC').toLocaleLowerCase('de-DE');
-  const match = strategyTopics.find(entry => entry.match.test(normalized));
+  const normalized = statement.normalize('NFC').toLocaleLowerCase('de-DE')
+    .replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
+  // A concrete group and a claim take precedence over a stock phrase such as
+  // “war nur Spaß” that can appear at the end of an otherwise specific claim.
+  const match = strategyTopics.find(entry => entry.anchors?.test(normalized) && entry.cues.test(normalized))
+    ?? strategyTopics.find(entry => !entry.anchors && entry.cues.test(normalized));
   if (!match) return null;
 
   const offset = Number.isSafeInteger(variation) ? variation : 0;
