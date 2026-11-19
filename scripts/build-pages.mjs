@@ -1,9 +1,11 @@
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { page } from '../worker/page.js';
 import { demoAnswer, pack } from '../worker/knowledge.js';
 
 // GitHub Pages serves a static demo. User input is handled in the browser.
+const strategies = await readFile(new URL('../worker/strategies.js', import.meta.url), 'utf8');
 const browserDemo = [
+  strategies.replace('export function strategyAnswer', 'function strategyAnswer'),
   'const demoAnswer = ' + demoAnswer.toString() + ';',
   'const pack = ' + pack.toString() + ';',
   'async function demoFetch(path, options) {',
