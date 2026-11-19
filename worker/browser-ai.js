@@ -134,7 +134,7 @@ export function createBrowserAI({
               },
               {
                 role: 'user',
-                content: 'Zitat: ' + JSON.stringify(statement) +
+                content: (reference.matched ? 'Thema: ' + reference.topic : 'Zitat: ' + JSON.stringify(statement)) +
                   '\nEntwurf: ' + JSON.stringify(draft) +
                   (material ? '\nOptionale Hinweise: ' + JSON.stringify(material.slice(0, 1200)) : '') +
                   (previous[tone].length ? '\nAndere Formulierung als: ' + JSON.stringify(previous[tone].slice(-4)) : '') +
@@ -151,8 +151,13 @@ export function createBrowserAI({
         const normalized = text.toLocaleLowerCase('de-DE').replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
         const quoted = statement.toLocaleLowerCase('de-DE').replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
         const repeatsClaim = quoted.length >= 12 && normalized.includes(quoted);
+        // The model may rephrase the draft, but shouldn't introduce fresh
+        // claims about people or groups that aren't in that draft.
+        const groupWords = /\b(?:frau(?:en)?|männern?|mann|mädchen|jungs?|ausländer\p{L}*|migrant\p{L}*|geflüchtet\p{L}*|flüchtling\p{L}*|behindert\p{L}*|arbeitslos\p{L}*)\b/giu;
+        const draftGroups = new Set([...draft.toLocaleLowerCase('de-DE').matchAll(groupWords)].map(match => match[0]));
+        const introducesGroup = [...normalized.matchAll(groupWords)].some(match => !draftGroups.has(match[0]));
         const dismissesAbility = /(?:nicht möglich|unmöglich).{0,60}(?:zu lernen|zu erlernen)|\b(?:frauen|männer|ausländer|geflüchtete) (?:können|sind) (?:doch |alle |einfach )?(?:nicht|keine|faul|kriminell)/iu.test(text);
-        if (text && !repeatsClaim && !dismissesAbility && !previous[tone].includes(text)) {
+        if (text && !repeatsClaim && !introducesGroup && !dismissesAbility && !previous[tone].includes(text)) {
           previous[tone].push(text);
           if (previous[tone].length > 12) previous[tone].shift();
           return {
