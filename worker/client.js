@@ -11,7 +11,7 @@ function openDialog(id) { const d = $(id); if (d && !d.open) { if (state.recordi
 document.querySelectorAll('[data-open]').forEach(b => b.addEventListener('click', () => { if (b.dataset.open === 'studio-dialog') { $('material').value = state.material; $('material-message').textContent = ''; } openDialog(b.dataset.open); }));
 document.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', () => b.closest('dialog').close()));
 document.querySelectorAll('dialog').forEach(d => d.addEventListener('click', e => { if (e.target === d) { const r = d.getBoundingClientRect(); if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) d.close(); } }));
-function setBusy(value) { state.busy = value; $('submit-button').disabled = value; $('another-button').disabled = value; $('mic-button').disabled = value; $('submit-label').textContent = value ? 'Worte werden gesucht …' : 'Antwort finden'; $('result-card').classList.toggle('loading', value); $('result-card').setAttribute('aria-busy', String(value)); }
+function setBusy(value) { state.busy = value; document.querySelectorAll('[data-tone]').forEach(button => { button.disabled = value || state.recording; }); $('another-button').disabled = value; $('mic-button').disabled = value;  $('result-card').classList.toggle('loading', value); $('result-card').setAttribute('aria-busy', String(value)); }
 function renderMode() {
   $('mode-badge').textContent = state.mode === 'ai' ? 'KI · individuelle Antwort' : 'Demo · vorbereitete Antworten';
   $('choose-demo').setAttribute('aria-pressed', String(state.mode === 'demo')); $('choose-ai').setAttribute('aria-pressed', String(state.mode === 'ai'));
@@ -27,8 +27,17 @@ function inputChanged() { $('char-count').textContent = $('statement').value.len
 $('statement').addEventListener('input', inputChanged);
 $('statement').addEventListener('keydown', e => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); requestAnswer(); } });
 document.querySelectorAll('[data-example]').forEach(b => b.addEventListener('click', () => { $('statement').value = b.dataset.example; inputChanged(); $('statement').focus(); }));
-function setTone(tone) { state.tone = tone; document.querySelectorAll('[data-tone]').forEach(b => { const active = b.dataset.tone === tone; b.setAttribute('aria-checked', String(active)); b.tabIndex = active ? 0 : -1; }); if (state.result) renderResult(); }
-const tones = [...document.querySelectorAll('[data-tone]')]; tones.forEach((b, i) => { b.addEventListener('click', () => setTone(b.dataset.tone)); b.addEventListener('keydown', e => { let j = i; if (['ArrowRight', 'ArrowDown'].includes(e.key)) j = (i + 1) % 3; else if (['ArrowLeft', 'ArrowUp'].includes(e.key)) j = (i + 2) % 3; else if (e.key === 'Home') j = 0; else if (e.key === 'End') j = 2; else return; e.preventDefault(); tones[j].focus(); setTone(tones[j].dataset.tone); }); });
+function setTone(tone) {
+  state.tone = tone;
+  document.querySelectorAll('[data-tone]').forEach(button => {
+    button.setAttribute('aria-pressed', String(button.dataset.tone === tone));
+  });
+}
+document.querySelectorAll('[data-tone]').forEach(button => button.addEventListener('click', () => {
+  const repeat = state.tone === button.dataset.tone && Boolean(state.result);
+  setTone(button.dataset.tone);
+  requestAnswer(repeat);
+}));
 function renderResult() {
   const r = state.result; if (!r) return; const selected = r[state.tone];
   $('result-card').hidden = false; $('result-card').dataset.tone = state.tone;
@@ -49,13 +58,13 @@ async function requestAnswer(next = false) {
   if (next) state.variation++; else if (state.statement !== statement) state.variation = 0;
   state.statement = statement; const id = ++state.requestId; const mode = state.mode; const material = state.material;
   const controller = new AbortController(); const timeout = setTimeout(() => controller.abort(), 30000);
-  message(); setBusy(true);
+  message(); setBusy(true); if (state.mode === 'ai') message('Worte werden gesucht …');
   try {
     const response = await fetch('/api/answer', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ statement, mode, consent: state.consent, material, variation: state.variation }), signal: controller.signal });
     const data = await response.json(); if (!response.ok) throw new Error(data.error || 'Die Antwort konnte gerade nicht gefunden werden.');
     if (!data.green?.answer || !data.yellow?.answer || !data.red?.answer) throw new Error('Es kam keine vollständige Antwort an. Bitte versuche es erneut.');
     if (id !== state.requestId || $('statement').value.trim() !== statement || state.mode !== mode || state.material !== material) { message('Deine Eingabe wurde geändert. Finde dazu bitte eine neue Antwort.'); return; }
-    state.result = data; renderResult();
+    message(); state.result = data; renderResult();
     if (window.matchMedia('(max-width: 720px)').matches) $('result-card').scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'nearest' });
   } catch (error) { if (id === state.requestId) message(error.name === 'AbortError' ? 'Die Antwort dauert gerade zu lange. Bitte versuche es noch einmal.' : error.message); }
   finally { clearTimeout(timeout); if (id === state.requestId) setBusy(false); }
@@ -71,7 +80,7 @@ try { const saved = localStorage.getItem(storageKey); if (saved) { const parsed 
 $('material-apply').addEventListener('click', () => { const text = $('material').value.trim(); if (text !== state.material) { state.material = text; state.consent = false; invalidate(); } try { if ($('remember-material').checked) localStorage.setItem(storageKey, JSON.stringify({ material: text })); else localStorage.removeItem(storageKey); } catch { $('material-message').textContent = 'Das Speichern auf diesem Gerät ist nicht möglich. Deine Hinweise bleiben für diese Sitzung übernommen.'; return; } $('studio-dialog').close(); toast(text ? 'Hinweise übernommen. Sie werden im KI Modus berücksichtigt.' : 'Die Werkstatt ist jetzt leer.'); });
 $('material-clear').addEventListener('click', () => { state.material = ''; $('material').value = ''; $('remember-material').checked = false; state.consent = false; try { localStorage.removeItem(storageKey); } catch {} invalidate(); $('material-message').textContent = 'Hinweise aus der Sitzung und dem Gerätespeicher gelöscht.'; });
 $('material-file').addEventListener('change', async e => { const file = e.target.files?.[0]; if (!file) return; try { if (!/\.(txt|md)$/i.test(file.name) || file.size > 100000) throw new Error('Bitte wähle eine .txt oder .md Datei mit höchstens 100 KB.'); const text = await file.text(); if (text.length > 12000) throw new Error('Die Datei enthält mehr als 12.000 Zeichen. Bitte kürze sie vor dem Einlesen.'); $('material').value = text; $('material-message').textContent = 'Datei eingelesen. Mit „Hinweise übernehmen“ bestätigen.'; } catch (error) { $('material-message').textContent = error.message; } e.target.value = ''; });
-function listening(active) { state.recording = active; $('mic-button').setAttribute('aria-pressed', String(active)); $('mic-label').textContent = active ? 'Stoppen' : 'Einsprechen'; $('submit-button').disabled = active || state.busy; }
+function listening(active) { state.recording = active; $('mic-button').setAttribute('aria-pressed', String(active)); $('mic-label').textContent = active ? 'Stoppen' : 'Einsprechen'; document.querySelectorAll('[data-tone]').forEach(button => { button.disabled = active || state.busy; }); }
 function startMic() {
   const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!Recognition) { message('Dieser Browser unterstützt die Spracheingabe nicht. Du kannst die Aussage eintippen oder die Diktierfunktion deiner Handytastatur nutzen.'); return; }
@@ -86,7 +95,7 @@ function startMic() {
 }
 $('mic-button').addEventListener('click', () => { if (state.recording) { state.recognition?.stop(); return; } if (!(window.SpeechRecognition || window.webkitSpeechRecognition)) { startMic(); return; } if (state.micConsent) startMic(); else openDialog('mic-dialog'); });
 $('mic-confirm').addEventListener('click', () => { state.micConsent = true; $('mic-dialog').close(); startMic(); });
-function disableShake() { state.shake = false; window.removeEventListener('devicemotion', motion); state.lastMotion = null; state.peaks = []; clearTimeout(sensorTimer); $('shake-button').setAttribute('aria-pressed', 'false'); $('shake-button').setAttribute('aria-label', 'Schütteln zum Antworten aktivieren'); $('shake-note').textContent = 'Oder auf dem Handy: Schütteln aktivieren.'; }
+function disableShake() { state.shake = false; window.removeEventListener('devicemotion', motion); state.lastMotion = null; state.peaks = []; clearTimeout(sensorTimer); $('shake-button').setAttribute('aria-pressed', 'false'); $('shake-button').setAttribute('aria-label', 'Schütteln zum Antworten aktivieren'); $('shake-note').textContent = 'Schütteln: Antwort in der zuletzt gewählten Farbe.'; }
 function motion(event) {
   if (!state.shake) return; const a = event.accelerationIncludingGravity; if (!a || [a.x,a.y,a.z].some(v => typeof v !== 'number')) return;
   state.motionSeen = true; const now = Date.now(); const current = { x: a.x, y: a.y, z: a.z, time: now }; const old = state.lastMotion; state.lastMotion = current;
@@ -99,11 +108,11 @@ function motion(event) {
 }
 $('shake-button').addEventListener('click', async () => {
   if (state.shake) { disableShake(); toast('Schütteln ausgeschaltet.'); return; }
-  if (typeof DeviceMotionEvent === 'undefined' || !window.isSecureContext) { toast('Schütteln ist hier nicht verfügbar. Der Knopf funktioniert genauso.'); return; }
+  if (typeof DeviceMotionEvent === 'undefined' || !window.isSecureContext) { toast('Schütteln ist hier nicht verfügbar. Tippe stattdessen auf eine Ampelfarbe.'); return; }
   try { if (typeof DeviceMotionEvent.requestPermission === 'function') { const permission = await DeviceMotionEvent.requestPermission(); if (permission !== 'granted') { toast('Der Bewegungssensor wurde nicht freigegeben. Nutze den Knopf.'); return; } } }
   catch { toast('Der Bewegungssensor ist hier nicht verfügbar. Nutze den Knopf.'); return; }
   state.shake = true; state.motionSeen = false; window.addEventListener('devicemotion', motion, { passive: true }); $('shake-button').setAttribute('aria-pressed', 'true'); $('shake-button').setAttribute('aria-label', 'Schütteln zum Antworten ausschalten'); $('shake-note').textContent = 'Schütteln ist aktiv. Zum Antworten das Handy kurz schütteln.'; toast('Schütteln aktiviert. Du kannst es mit demselben Knopf ausschalten.');
-  sensorTimer = setTimeout(() => { if (state.shake && !state.motionSeen) $('shake-note').textContent = 'Noch keine Sensordaten. Öffne die App direkt auf deinem Handy oder nutze den Knopf.'; }, 4000);
+  sensorTimer = setTimeout(() => { if (state.shake && !state.motionSeen) $('shake-note').textContent = 'Noch keine Sensordaten. Öffne die App direkt auf deinem Handy oder tippe auf eine Ampelfarbe.'; }, 4000);
 });
 document.addEventListener('visibilitychange', () => { state.peaks = []; state.lastMotion = null; if (document.hidden && state.recording) state.recognition?.stop(); });
 fetch('/api/status', { cache: 'no-store' }).then(r => { if (!r.ok) throw new Error(); return r.json(); }).then(data => { state.aiReady = data.aiReady === true; state.providerName = typeof data.providerName === 'string' ? data.providerName : ''; state.mode = state.aiReady ? 'ai' : 'demo'; renderMode(); }).catch(() => { renderMode(); $('ai-status').textContent = 'Der Verbindungsstatus konnte nicht geprüft werden. Versuche es nach dem Neuladen erneut.'; });
