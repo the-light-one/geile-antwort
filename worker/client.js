@@ -1,7 +1,8 @@
 export const clientScript = String.raw`(() => {
 'use strict';
 const $ = id => document.getElementById(id);
-const state = { tone: 'green', mode: 'demo', aiReady: false, providerName: '', busy: false, result: null, statement: '', material: '', variation: 0, consent: false, micConsent: false, recognition: null, recording: false, shake: false, motionSeen: false, lastMotion: null, lastShake: 0, peaks: [], details: false, requestId: 0 };
+const state = { tone: 'green', mode: 'demo', aiReady: false, providerName: '', busy: false, result: null, statement: '', material: '', nextVariation: { green: 0, yellow: 0, red: 0 }, consent: false, micConsent: false, recognition: null, recording: false, shake: false, motionSeen: false, lastMotion: null, lastShake: 0, peaks: [], details: false, requestId: 0 };
+function resetVariants() { state.nextVariation = { green: 0, yellow: 0, red: 0 }; }
 const toneLabels = { green: 'Gespräch öffnen', yellow: 'Freches Statement', red: 'Klare Grenze · Gespräch beenden' };
 let toastTimer, sensorTimer;
 function toast(text) { $('toast').textContent = text; clearTimeout(toastTimer); toastTimer = setTimeout(() => { $('toast').textContent = ''; }, 4200); }
@@ -23,7 +24,7 @@ function invalidate() {
   state.result = null; $('result-card').hidden = true; state.details = false; $('result-extra').hidden = true; $('result-tools').hidden = true; $('detail-button').setAttribute('aria-expanded', 'false');
   $('result-card').classList.remove('has-result'); $('result-card').classList.add('stale'); $('result-tip').textContent = 'Eingabe geändert. Finde eine neue Antwort.'; $('result-topic').hidden = true;
 }
-function inputChanged() { $('char-count').textContent = $('statement').value.length.toLocaleString('de-DE') + ' / 1.200'; state.variation = 0; invalidate(); message(); }
+function inputChanged() { $('char-count').textContent = $('statement').value.length.toLocaleString('de-DE') + ' / 1.200'; invalidate(); message(); }
 $('statement').addEventListener('input', inputChanged);
 $('statement').addEventListener('keydown', e => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); requestAnswer(); } });
 document.querySelectorAll('[data-example]').forEach(b => b.addEventListener('click', () => { $('statement').value = b.dataset.example; inputChanged(); $('statement').focus(); }));
@@ -34,9 +35,8 @@ function setTone(tone) {
   });
 }
 document.querySelectorAll('[data-tone]').forEach(button => button.addEventListener('click', () => {
-  const repeat = state.tone === button.dataset.tone && Boolean(state.result);
   setTone(button.dataset.tone);
-  requestAnswer(repeat);
+  requestAnswer();
 }));
 function renderResult() {
   const r = state.result; if (!r) return; const selected = r[state.tone];
@@ -49,30 +49,33 @@ function renderResult() {
   $('result-tools').hidden = false; $('bridge-text').textContent = selected.bridge; $('why-text').textContent = selected.why; $('safety-text').textContent = r.safety || ''; $('safety-text').hidden = !r.safety;
   if (r.safety) state.details = true; $('result-extra').hidden = !state.details; $('detail-button').setAttribute('aria-expanded', String(state.details));
 }
-async function requestAnswer(next = false) {
+async function requestAnswer() {
   if (state.busy || state.recording) return; const statement = $('statement').value.trim();
   if (!statement) { message('Schreib oder sprich zuerst die Aussage ein.'); $('statement').focus(); return; }
   if (statement.length > 1200) { message('Bitte kürze die Aussage auf höchstens 1.200 Zeichen.'); return; }
   if (state.mode === 'ai' && !state.aiReady) { message('Die KI ist noch nicht verbunden. Du kannst in der Zwischenzeit die Demo nutzen.'); return; }
   if (state.mode === 'ai' && !state.consent) { $('ai-consent-text').textContent = 'Für die Antwort werden deine Aussage und ' + (state.material ? 'deine Werkstatthinweise' : 'gegebenenfalls ergänzte Werkstatthinweise') + ' an ' + (state.providerName || 'den verbundenen KI Dienst') + ' gesendet. Bitte verzichte auf Namen und persönliche Daten.'; openDialog('ai-dialog'); return; }
-  if (next) state.variation++; else if (state.statement !== statement) state.variation = 0;
+  if (state.statement !== statement) resetVariants();
+  const tone = state.tone;
+  const variation = state.nextVariation[tone];
   state.statement = statement; const id = ++state.requestId; const mode = state.mode; const material = state.material;
   const controller = new AbortController(); const timeout = setTimeout(() => controller.abort(), 30000);
   message(); setBusy(true); if (state.mode === 'ai') message('Worte werden gesucht …');
   try {
-    const response = await fetch('/api/answer', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ statement, mode, consent: state.consent, material, variation: state.variation }), signal: controller.signal });
+    const response = await fetch('/api/answer', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ statement, mode, consent: state.consent, material, variation }), signal: controller.signal });
     const data = await response.json(); if (!response.ok) throw new Error(data.error || 'Die Antwort konnte gerade nicht gefunden werden.');
     if (!data.green?.answer || !data.yellow?.answer || !data.red?.answer) throw new Error('Es kam keine vollständige Antwort an. Bitte versuche es erneut.');
     if (id !== state.requestId || $('statement').value.trim() !== statement || state.mode !== mode || state.material !== material) { message('Deine Eingabe wurde geändert. Finde dazu bitte eine neue Antwort.'); return; }
+    state.nextVariation[tone] = variation + 1;
     message(); state.result = data; renderResult();
     if (window.matchMedia('(max-width: 720px)').matches) $('result-card').scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'nearest' });
   } catch (error) { if (id === state.requestId) message(error.name === 'AbortError' ? 'Die Antwort dauert gerade zu lange. Bitte versuche es noch einmal.' : error.message); }
   finally { clearTimeout(timeout); if (id === state.requestId) setBusy(false); }
 }
-$('answer-form').addEventListener('submit', e => { e.preventDefault(); requestAnswer(); }); $('another-button').addEventListener('click', () => requestAnswer(true));
+$('answer-form').addEventListener('submit', e => { e.preventDefault(); requestAnswer(); }); $('another-button').addEventListener('click', () => requestAnswer());
 $('detail-button').addEventListener('click', () => { state.details = !state.details; $('result-extra').hidden = !state.details; $('detail-button').setAttribute('aria-expanded', String(state.details)); });
 $('copy-button').addEventListener('click', async () => { if (!state.result) return; try { await navigator.clipboard.writeText(state.result[state.tone].answer); toast('Antwort kopiert.'); } catch { toast('Kopieren ist hier nicht verfügbar. Markiere den Antworttext zum Kopieren.'); } });
-function chooseMode(mode) { if (state.busy) { toast('Bitte warte kurz auf die laufende Antwort.'); return; } if (mode === 'ai' && !state.aiReady) { toast('Die KI ist noch nicht eingerichtet. Die Demo ist nutzbar.'); return; } if (mode !== state.mode) { state.mode = mode; state.variation = 0; invalidate(); renderMode(); message(); } $('mode-dialog').close(); }
+function chooseMode(mode) { if (state.busy) { toast('Bitte warte kurz auf die laufende Antwort.'); return; } if (mode === 'ai' && !state.aiReady) { toast('Die KI ist noch nicht eingerichtet. Die Demo ist nutzbar.'); return; } if (mode !== state.mode) { state.mode = mode; resetVariants(); invalidate(); renderMode(); message(); } $('mode-dialog').close(); }
 $('choose-demo').addEventListener('click', () => chooseMode('demo')); $('choose-ai').addEventListener('click', () => chooseMode('ai'));
 $('ai-confirm').addEventListener('click', () => { state.consent = true; $('ai-dialog').close(); requestAnswer(); }); $('ai-use-demo').addEventListener('click', () => { $('ai-dialog').close(); chooseMode('demo'); requestAnswer(); });
 const storageKey = 'geile-antwort-material-v1';
@@ -104,7 +107,7 @@ function motion(event) {
   if (delta < 17) return; state.peaks = state.peaks.filter(t => now - t < 800); if (!state.peaks.length || now - state.peaks[state.peaks.length - 1] > 80) state.peaks.push(now);
   if (state.peaks.length < 3) return; state.peaks = []; state.lastShake = now;
   if (!$('statement').value.trim()) { message('Schreib oder sprich zuerst die Aussage ein.'); return; }
-  requestAnswer(Boolean(state.result));
+  requestAnswer();
 }
 $('shake-button').addEventListener('click', async () => {
   if (state.shake) { disableShake(); toast('Schütteln ausgeschaltet.'); return; }
