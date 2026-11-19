@@ -35,18 +35,21 @@ export const pack = (green, yellow, red, bridge, close = true) => ({
   care: 'Du musst nicht perfekt antworten. Deine Haltung darf trotzdem hörbar werden.', safety: '',
 });
 export function demoAnswer(statement, variation = 0) {
-  const t = statement.toLocaleLowerCase('de'); let topic = 'Allgemeine Gesprächshilfe'; let choices;
+  const t = statement.toLocaleLowerCase('de');
   if (/(umbringen|abstechen|verprügeln|erschlagen|schlag dich|bring dich um|töte|töten|gewalt androhen)/u.test(t)) return { ...pack('Ich möchte Abstand. Können wir das Gespräch jetzt beenden?', 'Ich beende dieses Gespräch jetzt und hole mir Unterstützung.', 'Stopp. Ich möchte nicht bedroht werden und gehe jetzt.', '', false), care: 'Du schuldest niemandem eine schlagfertige Reaktion.', safety: 'Bei Bedrohung: Halte Abstand und suche Unterstützung bei einer sicheren Person. Du musst das Gespräch nicht fortsetzen.', topic: 'Selbstschutz', matched: true };
   const tailored = strategyAnswer(statement, variation);
   if (tailored) return tailored;
-  if (/(ausländer|geflüchtet|flüchtling|migrant|asyl)/u.test(t) && /(arbeit|job|arbeitspl)/u.test(t)) {
-    topic = 'Herkunft und Arbeit'; choices = [pack('Welche konkrete Situation meinst du, und warum ist dabei die Herkunft entscheidend?', 'Ein Arbeitsvertrag fragt nach Fähigkeiten. Vielleicht sollten wir das auch tun.', 'Ich möchte Menschen nach ihrem Handeln beurteilen, nicht nach ihrer Herkunft.', 'Was wäre aus deiner Sicht eine faire Lösung für alle Beteiligten?'), pack('Was genau ist passiert? Lass uns über den konkreten Fall sprechen.', 'Herkunft ist kein Beruf. Über Fähigkeiten lässt sich besser reden.', 'Über Arbeit können wir reden. Pauschale Abwertung von Menschen möchte ich dabei nicht mittragen.', 'Welches konkrete Problem möchtest du lösen?')];
-  } else if (/(frau|mädchen|männer|jungen)/u.test(t) && /(technik|können|gehören|küche|führen)/u.test(t)) {
-    topic = 'Geschlechterklischees'; choices = [pack('Was hat die Fähigkeit einer Person für dich mit ihrem Geschlecht zu tun?', 'Talent hat offenbar deinen Geschlechterfragebogen noch nicht ausgefüllt.', 'Ich traue Menschen etwas zu. Ihr Geschlecht entscheidet nicht über ihre Fähigkeiten.', 'Können wir auf die konkrete Person und ihre Erfahrung schauen?'), pack('An welche konkrete Erfahrung denkst du dabei?', 'Kompetenz passt zum Glück in mehr als zwei Schubladen.', 'Ich möchte, dass Menschen nach ihren Fähigkeiten beurteilt werden.', 'Welche Fähigkeiten sind hier tatsächlich wichtig?')];
-  } else if (/(wird man|wird wohl|darf man|darf wohl|nichts mehr|nicht mehr)/u.test(t) && /(sagen|meinung)/u.test(t)) {
-    topic = 'Meinung und Widerspruch'; choices = [pack('Was möchtest du denn konkret sagen, und welche Reaktion stört dich daran?', 'Meinungsfreiheit gibt es zum Glück auch für die Antwort.', 'Du darfst deine Meinung sagen. Und ich darf widersprechen, wenn dabei Menschen abgewertet werden.', 'Können wir über die konkrete Aussage sprechen?'), pack('Geht es darum, etwas sagen zu dürfen, oder darum, dafür keinen Widerspruch zu bekommen?', 'Eine Meinung ist kein Mikrofon mit Stummschaltung für alle anderen.', 'Ich möchte offen reden können und dabei respektvoll miteinander umgehen.', 'Was ist dir an dem Thema besonders wichtig?')];
-  } else if (/(nur spaß|nur spass|war.*witz|humor|witz)/u.test(t)) {
-    topic = 'Abwertung als Witz'; choices = [pack('Was genau findest du daran lustig?', 'Ein guter Witz kommt auch ohne jemanden als Fußabtreter aus.', 'Ich lache gern. Wenn Menschen dabei abgewertet werden, möchte ich das nicht mittragen.', 'Geht der Witz auch, ohne jemanden kleinzumachen?'), pack('Wie könnte der Witz bei der Person ankommen, über die du sprichst?', 'Mein Humor ist dabei. Die Abwertung darf gern draußen bleiben.', 'Spaß soll verbinden. Hier geht er für mich auf Kosten anderer.', 'Was wolltest du mit dem Witz ausdrücken?')];
-  } else choices = [pack('Wie meinst du das genau? Ich möchte verstehen, worauf du hinauswillst.', 'Mein Kopf hat bei dem Spruch gerade auf Pause gedrückt.', 'Ich möchte darüber gerade nicht weiterreden.', 'Welche konkrete Erfahrung steckt für dich dahinter?'), pack('Kannst du mir ein konkretes Beispiel nennen?', 'Große Aussage. Die passt kaum durch die Tür.', 'Ich sehe das anders und lasse es dabei.', 'Worüber sind wir uns einig, und wo unterscheiden wir uns?')];
-  return { ...choices[Math.abs(variation) % choices.length], topic, matched: topic !== 'Allgemeine Gesprächshilfe' };
+  // No sufficiently specific rule matched. Do not guess which group or
+  // intention the speaker meant. Cycle through distinct general strategies.
+  const choices = [
+    pack('Wie meinst du das genau? Ich möchte verstehen, worauf du hinauswillst.', 'Mein Kopf hat bei dem Spruch gerade auf Pause gedrückt.', 'Ich möchte darüber gerade nicht weiterreden.', 'Welche konkrete Erfahrung steckt für dich dahinter?'),
+    pack('Kannst du mir ein konkretes Beispiel nennen?', 'Große Aussage. Die passt kaum durch die Tür.', 'Ich sehe das anders und lasse es dabei.', 'Wie war das in diesem einen Fall?'),
+    pack('Woran machst du das fest?', 'Das Urteil kam schneller als die Begründung.', 'Diese Aussage möchte ich so nicht mittragen.', 'Was würde deine Einschätzung ändern?'),
+    pack('Gilt das für dich immer, oder gibt es Ausnahmen?', 'Für so viele Fälle ist die Schublade ganz schön klein.', 'Ich komme da zu einem anderen Schluss. Mehr möchte ich dazu jetzt nicht sagen.', 'Wo würdest du eine Ausnahme machen?'),
+    pack('Was möchtest du mit dem Satz sagen?', 'Der Satz hat mich gerade aus dem Takt gebracht.', 'Ich lasse das Thema jetzt ruhen.', 'Was ist dir dabei am wichtigsten?'),
+    pack('Meinst du damit etwas, das du selbst erlebt hast?', 'Bei der Abkürzung sind wohl ein paar Details auf der Strecke geblieben.', 'Ich mache an dieser Stelle eine Pause vom Gespräch.', 'Was ist genau passiert?'),
+  ];
+  const offset = Number.isSafeInteger(variation) ? variation : 0;
+  const index = ((offset % choices.length) + choices.length) % choices.length;
+  return { ...choices[index], topic: 'Allgemeine Gesprächshilfe', matched: false };
 }
