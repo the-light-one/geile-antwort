@@ -2,7 +2,7 @@ export const clientScript = String.raw`(() => {
 'use strict';
 const $ = id => document.getElementById(id);
 const state = { tone: 'green', mode: 'demo', aiReady: false, providerName: '', busy: false, result: null, statement: '', material: '', variation: 0, consent: false, micConsent: false, recognition: null, recording: false, shake: false, motionSeen: false, lastMotion: null, lastShake: 0, peaks: [], details: false, requestId: 0 };
-const toneLabels = { green: 'Ruhig & nachfragend', yellow: 'Frech & schlagfertig', red: 'Klar & zugewandt' };
+const toneLabels = { green: 'Gespräch öffnen', yellow: 'Freches Statement', red: 'Klare Grenze · Gespräch beenden' };
 let toastTimer, sensorTimer;
 function toast(text) { $('toast').textContent = text; clearTimeout(toastTimer); toastTimer = setTimeout(() => { $('toast').textContent = ''; }, 4200); }
 function message(text = '') { $('form-message').textContent = text; }
@@ -20,7 +20,7 @@ function renderMode() {
 }
 function invalidate() {
   if (!state.result) return;
-  state.result = null; state.details = false; $('result-extra').hidden = true; $('result-tools').hidden = true; $('detail-button').setAttribute('aria-expanded', 'false');
+  state.result = null; $('result-card').hidden = true; state.details = false; $('result-extra').hidden = true; $('result-tools').hidden = true; $('detail-button').setAttribute('aria-expanded', 'false');
   $('result-card').classList.remove('has-result'); $('result-card').classList.add('stale'); $('result-tip').textContent = 'Eingabe geändert. Finde eine neue Antwort.'; $('result-topic').hidden = true;
 }
 function inputChanged() { $('char-count').textContent = $('statement').value.length.toLocaleString('de-DE') + ' / 1.200'; state.variation = 0; invalidate(); message(); }
@@ -31,10 +31,12 @@ function setTone(tone) { state.tone = tone; document.querySelectorAll('[data-ton
 const tones = [...document.querySelectorAll('[data-tone]')]; tones.forEach((b, i) => { b.addEventListener('click', () => setTone(b.dataset.tone)); b.addEventListener('keydown', e => { let j = i; if (['ArrowRight', 'ArrowDown'].includes(e.key)) j = (i + 1) % 3; else if (['ArrowLeft', 'ArrowUp'].includes(e.key)) j = (i + 2) % 3; else if (e.key === 'Home') j = 0; else if (e.key === 'End') j = 2; else return; e.preventDefault(); tones[j].focus(); setTone(tones[j].dataset.tone); }); });
 function renderResult() {
   const r = state.result; if (!r) return; const selected = r[state.tone];
+  $('result-card').hidden = false; $('result-card').dataset.tone = state.tone;
+  $('bridge-section').hidden = state.tone !== 'green' || !selected.bridge || Boolean(r.safety);
   $('result-card').classList.remove('stale'); $('result-card').classList.add('has-result'); $('answer-text').classList.remove('empty'); $('answer-text').textContent = selected.answer;
   $('empty-detail').hidden = true; $('result-topic').hidden = false; $('result-topic').textContent = toneLabels[state.tone];
   $('mode-badge').textContent = r.mode === 'ai' ? 'KI · individuelle Antwort' : 'Demo · vorbereitete Antwort';
-  $('result-tip').textContent = r.mode === 'demo' ? (r.matched ? 'Vorbereitetes Beispiel · ' + r.topic : 'Allgemeine Gesprächshilfe · keine individuelle Analyse') : r.care;
+  $('result-tip').textContent = r.mode === 'demo' ? (r.matched ? r.topic : 'Allgemeiner Antwortvorschlag') : r.care;
   $('result-tools').hidden = false; $('bridge-text').textContent = selected.bridge; $('why-text').textContent = selected.why; $('safety-text').textContent = r.safety || ''; $('safety-text').hidden = !r.safety;
   if (r.safety) state.details = true; $('result-extra').hidden = !state.details; $('detail-button').setAttribute('aria-expanded', String(state.details));
 }
