@@ -21,7 +21,7 @@ function renderMode() {
   if (!state.localAI) return;
   $('mode-open').textContent = state.mode === 'ai' ? 'Modus: Lokale KI' : 'KI im Browser ausprobieren';
   $('choose-ai').textContent = 'Lokale KI';
-  $('mode-description').textContent = state.mode === 'demo' ? 'Die Demo verwendet vorbereitete Antworten.' : 'Llama formuliert die Antwort für die gewählte Farbe direkt auf deinem Gerät.';
+  $('mode-description').textContent = state.mode === 'demo' ? 'Die Demo verwendet vorbereitete Antworten.' : 'Die lokale KI wählt den passenden vorbereiteten Satz zur Aussage und zur gewählten Farbe.';
   $('ai-status').textContent = state.aiReady ? 'Beim ersten KI Aufruf lädt der Browser mehrere hundert MB Modelldateien.' : 'Dieser Browser bietet kein WebGPU. Die Demo funktioniert weiterhin.';
 }
 function invalidate() {
@@ -49,8 +49,8 @@ function renderResult() {
   $('bridge-section').hidden = state.tone !== 'green' || !selected.bridge || Boolean(r.safety);
   $('result-card').classList.remove('stale'); $('result-card').classList.add('has-result'); $('answer-text').classList.remove('empty'); $('answer-text').textContent = selected.answer;
   $('empty-detail').hidden = true; $('result-topic').hidden = false; $('result-topic').textContent = toneLabels[state.tone];
-  $('mode-badge').textContent = r.mode === 'ai' ? (state.localAI ? 'KI · lokal auf deinem Gerät' : 'KI · individuelle Antwort') : 'Demo · vorbereitete Antwort';
-  $('result-tip').textContent = r.localFallback ? 'Die KI Ausgabe wurde verworfen. Hier ist ein vorbereiteter Vorschlag.' : r.mode === 'demo' ? (r.matched ? r.topic : 'Allgemeiner Antwortvorschlag') : r.care;
+  $('mode-badge').textContent = r.localSelection ? 'KI · lokal ausgewählt' : r.mode === 'ai' ? 'KI · individuelle Antwort' : 'Vorbereitete Antwort';
+  $('result-tip').textContent = r.localFallback ? 'Ohne KI Auswahl: vorbereiteter Vorschlag.' : r.localSelection || r.mode === 'demo' ? (r.matched ? r.topic : 'Allgemeiner Antwortvorschlag') : r.care;
   $('result-tools').hidden = false; $('bridge-text').textContent = selected.bridge; $('why-text').textContent = selected.why; $('safety-text').textContent = r.safety || ''; $('safety-text').hidden = !r.safety;
   if (r.safety) state.details = true; $('result-extra').hidden = !state.details; $('detail-button').setAttribute('aria-expanded', String(state.details));
 }
