@@ -23,6 +23,18 @@ body .input-card .field-box{margin-bottom:20px}
 .result-card[data-tone=yellow]{background:#fff7df;border-color:#dbb34e}
 .result-card[data-tone=red]{background:#fff0ed;border-color:#db8c81}
 @media(max-width:420px){body .tone-sub{white-space:normal}}
+
+body .tones{gap:10px}
+body .tone{min-height:124px;padding:12px 7px;text-align:center;border:2px solid var(--tone-stroke);background:var(--tone-fill)}
+body .tone[data-tone=green]{--tone-fill:#bdeccd;--tone-stroke:#248051;--tone-ink:#153f2a}
+body .tone[data-tone=yellow]{--tone-fill:#ffdf73;--tone-stroke:#a36c09;--tone-ink:#4e3407}
+body .tone[data-tone=red]{--tone-fill:#ffb7ac;--tone-stroke:#bd4436;--tone-ink:#641f17}
+body .tone[aria-pressed=true]{box-shadow:inset 0 0 0 2px var(--tone-stroke)}
+body .tone-top{display:flex;flex-direction:column;color:var(--tone-ink);line-height:1.2}
+body .tone-dot{width:26px;height:26px;background:var(--tone-stroke)}
+body .tone-sub{color:var(--tone-ink);white-space:normal;line-height:1.2;display:block}
+body .action{justify-content:center;margin-top:12px}
+body .action .shake{width:44px;min-height:44px}
 </style>
 </head><body>
 <a class="skip" href="#statement">Zur Aussage springen</a>
@@ -33,8 +45,8 @@ body .input-card .field-box{margin-bottom:20px}
 <section class="workspace" aria-label="Eine Antwort finden">
 <form id="answer-form" class="input-card"><div class="card-heading"><h2>Was wurde gesagt?</h2><span class="small-label">Tippen oder sprechen</span></div><label class="visually-hidden" for="statement">Aussage, auf die du antworten möchtest</label><div class="field-box"><textarea id="statement" maxlength="1200" placeholder="„Das wird man ja wohl noch sagen dürfen …“" aria-describedby="input-help" required></textarea><div class="field-bottom"><button id="mic-button" class="mic-button" type="button" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M6 11v1a6 6 0 0 0 12 0v-1M12 18v3M9 21h6"/></svg><span id="mic-label">Einsprechen</span></button><span id="char-count" class="counter">0 / 1.200</span></div></div><span id="input-help" class="visually-hidden">Bitte ohne Namen oder persönliche Daten. Du kannst den erkannten Text vor dem Absenden bearbeiten.</span>
 <div class="examples"><span>Mal ausprobieren:</span><button class="example" type="button" data-example="Das wird man ja wohl noch sagen dürfen!">„Wird man ja wohl sagen dürfen“</button><button class="example" type="button" data-example="Das war doch nur Spaß!">„War doch nur Spaß“</button></div>
-<span class="tone-label" id="tone-label">Wie möchtest du antworten? <span class="tone-note">Deine Antwortampel</span></span><div class="tones" role="radiogroup" aria-labelledby="tone-label"><button class="tone" data-tone="green" role="radio" aria-checked="true" tabindex="0" type="button"><span class="tone-top"><span class="tone-dot"></span>Nachfragen</span><span class="tone-sub">Gespräch öffnen</span></button><button class="tone" data-tone="yellow" role="radio" aria-checked="false" tabindex="-1" type="button"><span class="tone-top"><span class="tone-dot"></span>Kontern</span><span class="tone-sub">Freches Statement</span></button><button class="tone" data-tone="red" role="radio" aria-checked="false" tabindex="-1" type="button"><span class="tone-top"><span class="tone-dot"></span>Grenze setzen</span><span class="tone-sub">Gespräch beenden</span></button></div>
-<div class="action"><button class="primary" id="submit-button" type="submit"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5Z"/><path d="M20 3v4M18 5h4"/></svg><span id="submit-label">Antwort finden</span></button><button id="shake-button" class="shake" aria-pressed="false" aria-label="Schütteln zum Antworten aktivieren" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="4" width="8" height="16" rx="2" transform="rotate(13 12 12)"/><path d="m4 5-2 3 2 3M20 13l2 3-2 3M11 17h1"/></svg></button></div><p class="shake-note" id="shake-note">Oder auf dem Handy: Schütteln aktivieren.</p><p id="form-message" class="form-message" role="alert"></p></form>
+<span class="tone-label" id="tone-label">Tippe auf eine Farbe für deine Antwort</span><div class="tones" role="group" aria-labelledby="tone-label"><button class="tone" data-tone="green" aria-pressed="true" type="button"><span class="tone-top"><span class="tone-dot"></span>Nachfragen</span><span class="tone-sub">Gespräch öffnen</span></button><button class="tone" data-tone="yellow" aria-pressed="false" type="button"><span class="tone-top"><span class="tone-dot"></span>Kontern</span><span class="tone-sub">Freches Statement</span></button><button class="tone" data-tone="red" aria-pressed="false" type="button"><span class="tone-top"><span class="tone-dot"></span>Grenze setzen</span><span class="tone-sub">Gespräch beenden</span></button></div>
+<div class="action"><button id="shake-button" class="shake" aria-pressed="false" aria-label="Schütteln zum Antworten aktivieren" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="4" width="8" height="16" rx="2" transform="rotate(13 12 12)"/><path d="m4 5-2 3 2 3M20 13l2 3-2 3M11 17h1"/></svg></button></div><p class="shake-note" id="shake-note">Schütteln: Antwort in der zuletzt gewählten Farbe.</p><p id="form-message" class="form-message" role="alert"></p></form>
 <article class="result-card" id="result-card" hidden aria-labelledby="result-title"><div class="decoration" aria-hidden="true"></div><div class="result-top"><span class="result-label" id="result-title">Deine Antwort</span><span class="mode-badge" id="mode-badge">Verbindung wird geprüft</span></div><div class="result-middle" id="result-live" aria-live="polite" aria-atomic="true"><div class="quote-mark" aria-hidden="true">“</div><p class="result-quote empty" id="answer-text">Kurz durchatmen.<br>Dann Haltung zeigen.</p><p class="empty-detail" id="empty-detail">Du brauchst keinen perfekten Konter.<br>Nur einen ersten Satz.</p><p class="result-topic" id="result-topic" hidden></p></div><div class="result-bottom"><span class="result-tip" id="result-tip">Deine Antwort wartet hier auf dich.</span><div class="result-tools" id="result-tools" hidden><button id="detail-button" class="icon-button" type="button" aria-label="Mehr zur Antwort anzeigen" aria-expanded="false" aria-controls="result-extra"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 11v5M12 7.5v.1"/></svg></button><button id="copy-button" class="icon-button" type="button" aria-label="Antwort kopieren"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="11" height="13" rx="2"/><path d="M15 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h3"/></svg></button><button id="another-button" class="icon-button" type="button" aria-label="Eine andere Antwort finden"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 8a8 8 0 0 0-14-2L3 9M3 4v5h5M4 16a8 8 0 0 0 14 2l3-3M21 20v-5h-5"/></svg></button></div></div></article>
 <aside id="result-extra" class="result-extra" aria-label="Mit der Antwort weitergehen" hidden><p class="safety" id="safety-text" hidden></p><div id="bridge-section"><h3>Wenn du weiterfragen möchtest</h3><p id="bridge-text"></p></div><h3>Warum diese Antwort?</h3><p id="why-text"></p></aside>
 </section>
@@ -48,9 +60,96 @@ body .input-card .field-box{margin-bottom:20px}
 <dialog id="mic-dialog"><div class="dialog-head"><h2>Deine Aussage einsprechen</h2><button type="button" class="close" data-close aria-label="Schließen">✕</button></div><p>Sprich den Satz selbst ein. Die Aufnahme startet erst mit deiner Zustimmung und endet automatisch oder mit „Stoppen“.</p><p>Die Spracherkennung deines Browsers kann Audio an einen externen Sprachdienst übertragen. Bitte nenne keine Namen oder vertraulichen Angaben und zeichne andere Personen nicht ungefragt auf.</p><p>Du kannst den erkannten Text anschließend prüfen und bearbeiten. Eine Antwort wird erst erzeugt, wenn du auf „Antwort finden“ drückst.</p><button id="mic-confirm" type="button" class="primary">Spracherkennung starten</button></dialog>
 <dialog id="ai-dialog"><div class="dialog-head"><h2>Eine Antwort mit KI finden</h2><button type="button" class="close" data-close aria-label="Schließen">✕</button></div><p id="ai-consent-text">Für die Antwort werden deine Aussage und deine optionalen Hinweise an den verbundenen KI Dienst gesendet. Bitte verzichte auf Namen und persönliche Daten.</p><p>Die App legt keine Gesprächshistorie an. Beim KI Anbieter können eigene Regeln zur Verarbeitung und Aufbewahrung gelten. Eine KI Antwort kann unpassend oder falsch sein. Entscheide selbst, was du davon sagen möchtest.</p><button id="ai-confirm" type="button" class="primary">Zustimmen und Antwort finden</button><button id="ai-use-demo" type="button" class="text-button">Stattdessen die Demo nutzen</button></dialog>
 <dialog id="privacy-dialog"><div class="dialog-head"><h2>Daten & Transparenz</h2><button type="button" class="close" data-close aria-label="Schließen">✕</button></div><p><strong>Deine Eingabe:</strong> Die App speichert keine Gesprächshistorie. In dieser Demo wird die vorbereitete Antwort direkt in deinem Browser ausgewählt.</p><p><strong>KI Modus:</strong> Deine Aussage und optionale Werkstatthinweise werden nach deiner Zustimmung an den verbundenen KI Anbieter gesendet. Die App kann dessen Verarbeitung nicht vollständig kontrollieren. Die Antworten sind Vorschläge und keine Faktenprüfung.</p><p><strong>Mikrofon:</strong> Spracherkennung läuft nur, wenn du sie aktiv startest. Je nach Browser kann ein externer Sprachdienst Audio verarbeiten.</p><p><strong>Auf deinem Gerät:</strong> Nur wenn du es ausdrücklich auswählst, werden Werkstatthinweise lokal gespeichert. Du kannst sie in der Werkstatt wieder löschen.</p><p><strong>Schütteln:</strong> Der aktivierte Bewegungssensor wird im Browser ausgewertet. Die App sendet keine Bewegungsdaten an den Server.</p><p style="font-size:12px">Dies ist ein privater Entwicklungsprototyp. Antworten und Schutzmechanismen müssen vor einer öffentlichen Nutzung fachlich und technisch weiter geprüft werden.</p></dialog>
-<script>const demoAnswer = function demoAnswer(statement, variation = 0) {
+<script>// Eigene Antworttexte. Die Reihenfolge bevorzugt spezifische Themen.
+const strategyTopics = [
+  {
+    topic: "Herkunft und Zugehörigkeit",
+    match: /(?=.*\b(?:akzent|herkunft|ausländer\w*|migrant\w*|geflüchtet\w*)\b)(?=.*(?:gehört|gehören|raus|nichts verloren|nicht hierher|dazugehör))/u,
+    variants: [
+      ["Was hat die Herkunft für dich damit zu tun, wer hier dazugehören kann?", "Zugehörigkeit gibt es zum Glück auch ohne Herkunftsstempel.", "Ich lasse Menschen nicht nach Herkunft aussortieren. Für mich endet das Gespräch hier."],
+      ["Welche konkrete Situation meinst du, wenn du sagst, jemand gehöre nicht hierher?", "Ein Akzent ist kein Türsteher.", "Hier ist Platz für Menschen mit verschiedenen Geschichten. Über ihr Dazugehören diskutiere ich nicht weiter."],
+      ["Woran würdest du merken, dass jemand hier dazugehört, wenn du die Herkunft außen vor lässt?", "Wer dazugehören will, braucht keinen Geburtsort als Empfehlungsschreiben.", "Für mich zählt, wie wir miteinander umgehen. Ich lasse es damit gut sein."],
+      ["Was würdest du an der Person konkret anders beurteilen, wenn du ihre Herkunft nicht kennen würdest?", "Eine Herkunft verrät weniger über einen Menschen als ein Gespräch mit ihm.", "Ich möchte, dass Menschen hier willkommen sind. An der Ausgrenzung beteilige ich mich nicht weiter."],
+    ],
+  },
+  {
+    topic: "Geschlecht und Können",
+    match: /(?=.*(?:frauen|mädchen|männer|jungen))(?=.*(?:können kein|können nicht|zu emotional|gehören in die küche|führung ungeeignet|nicht für technik))/u,
+    variants: [
+      ["An welcher konkreten Fähigkeit machst du das fest?", "Kompetenz hat sich für deine Schublade leider zu breit gemacht.", "Ich beurteile Menschen nach ihrem Können. Für mich ist die Diskussion hier beendet."],
+      ["Welche Anforderung hat diese Aufgabe, die du mit Geschlecht verbindest?", "Für gute Arbeit zählt Können. Das Etikett kann zu Hause bleiben.", "Ich möchte nicht, dass Geschlecht über Chancen entscheidet. Ich gehe darauf nicht weiter ein."],
+      ["Bei welcher Person hast du das beobachtet, und was genau ist passiert?", "Eine Schublade ist ein ziemlich kleiner Ort, um Talent zu suchen.", "Ich traue Menschen unabhängig von ihrem Geschlecht etwas zu. Für mich ist damit alles gesagt."],
+      ["Welche Leistung würdest du erwarten, wenn das Geschlecht gar nicht zur Sprache gekommen wäre?", "Talent hat sich in der falschen Spalte eingetragen und ist trotzdem da.", "Ich lasse Menschen ihre Fähigkeiten selbst zeigen. Das Gespräch darüber beende ich hier."],
+    ],
+  },
+  {
+    topic: "Abwertung als Witz",
+    match: /(?:war doch nur (?:ein witz|spaß)|verstehst? keinen spaß|wird man doch mal lachen dürfen|witz muss man abkönnen)/u,
+    variants: [
+      ["Was daran sollte für die Person lustig sein, über die gesprochen wurde?", "Wenn der Witz einen Fußabtreter braucht, fehlt ihm eine Pointe.", "Ich mag Humor, der Menschen nicht kleinmacht. Ich lasse das Gespräch hier enden."],
+      ["Wie könnte der Spruch bei jemandem ankommen, der selbst gemeint ist?", "Die Pointe darf gern auf eigenen Beinen stehen.", "Für mich war die Grenze überschritten. Ich rede darüber jetzt nicht weiter."],
+      ["Was wolltest du mit dem Witz treffen: die Situation oder die Person?", "Ein guter Witz bringt Menschen zum Lachen und niemanden unter die Räder.", "Mir ist wichtig, dass alle mitlachen können. Für mich ist das damit gesagt."],
+      ["Wie würde dieselbe Idee als Witz klingen, ohne jemanden zum Ziel zu machen?", "Spaß ist willkommen. Den Seitenhieb kann er an der Garderobe abgeben.", "Ich möchte da nicht mitlachen. Ich beende das Thema für mich."],
+    ],
+  },
+  {
+    topic: "Geld und Sozialleistungen",
+    match: /(?=.*(?:bürgergeld|sozialhilfe|arbeitslos\w*))(?=.*(?:alle faul|nur faul|zu faul|wollen nicht arbeiten|wollen einfach nicht arbeiten|liegen uns auf der tasche))/u,
+    variants: [
+      ["Welche konkrete Person oder Situation meinst du mit dieser Behauptung?", "Ein Kontostand taugt schlecht als Charakterzeugnis.", "Ich möchte Menschen mit wenig Geld respektvoll behandeln. Über pauschale Urteile rede ich nicht weiter."],
+      ["Was weißt du in dem konkreten Fall darüber, welche Arbeit die Person sucht?", "Für ein gutes Urteil braucht es mehr als einen Blick aufs Konto.", "Für mich verdienen Menschen auch ohne Arbeit Respekt. Ich schließe das Gespräch hier ab."],
+      ["Was würdest du über eine dir nahestehende Person wissen wollen, bevor du dasselbe über sie sagst?", "Wer alles über eine Person aus einem Bescheid liest, hat ein sehr kurzes Buch gefunden.", "Ich halte diese Pauschalisierung für unfair. Für mich ist das Thema damit beendet."],
+      ["An welcher Beobachtung machst du fest, warum jemand gerade keine Arbeit hat?", "Ein fehlender Job ist noch keine fertige Lebensgeschichte.", "Ich rede über konkrete Situationen gern respektvoll. Diese Pauschalisierung lasse ich stehen und steige aus."],
+    ],
+  },
+  {
+    topic: "Behinderung und Teilhabe",
+    match: /(?=.*(?:behindert\w*|behinderung|rollstuhl))(?=.*(?:kann doch nichts|können doch nichts|kann sowieso nicht|können sowieso nicht|gehören hier nicht|sollten nicht mitmachen|nur eine last))/u,
+    variants: [
+      ["Was wäre nötig, damit die Person bei der konkreten Aufgabe mitmachen kann?", "Eine Stufe verrät mehr über den Eingang als über die Person davor.", "Für mich hat jede Person eine faire Chance verdient. Ich beende das Gespräch an dieser Stelle."],
+      ["Hast du die Person gefragt, wie sie selbst gern teilnehmen möchte?", "Über jemanden hinwegzuplanen ist keine besonders barrierefreie Art zu denken.", "Ich respektiere, dass die Person selbst bestimmt, was sie sich zutraut. Damit schließe ich ab."],
+      ["Welche Fähigkeit braucht man für die Aufgabe, und woran machst du deine Einschätzung fest?", "Wer die Tür zu früh zumacht, sieht wenig von dem, was dahinter möglich ist.", "Ich möchte Teilhabe ermöglichen. Über pauschale Ausschlüsse diskutiere ich nicht weiter."],
+      ["Welche Hürde liegt in der Aufgabe selbst und welche im Ablauf?", "Vielleicht ist hier der Ablauf festgefahren und braucht etwas Bewegung.", "Für mich zählt, was die Person selbst will und mitbringt. Ich lasse es damit gut sein."],
+    ],
+  },
+  {
+    topic: "Widerspruch und Meinungsfreiheit",
+    match: /(?:sagen darf man|darf man nichts mehr sagen|wird man ja wohl noch sagen dürfen|man darf ja nichts mehr sagen)/u,
+    variants: [
+      ["Welche konkrete Aussage möchtest du machen, und welchen Widerspruch hast du erlebt?", "Meinungsfreiheit hat keinen Knopf zum Stummschalten der anderen.", "Deine Meinung steht dir frei, meine auch. Für mich ist dieses Gespräch hier zu Ende."],
+      ["Über welchen Satz reden wir gerade, und was genau ist danach passiert?", "Wer das Wort nimmt, kann auch mit einem Echo rechnen.", "Mir ist ein respektvoller Austausch wichtig. Ich lasse es an dieser Stelle gut sein."],
+      ["Was für eine Reaktion hättest du dir auf deine Aussage gewünscht?", "Ein Mikrofon mit Rückkanal wäre hier kein Fehler.", "Ich finde, Widerspruch gehört zu einem offenen Gespräch. Mehr möchte ich dazu jetzt nicht sagen."],
+      ["Welche Rückmeldung war für dich schwierig, und was wurde darin kritisiert?", "Das letzte Wort gehört selten zum Lieferumfang einer Meinung.", "Ich akzeptiere unterschiedliche Sichtweisen. Diese Runde beende ich für mich."],
+    ],
+  },
+];
+
+function strategyAnswer(statement, variation = 0) {
+  if (typeof statement !== 'string') return null;
+  const normalized = statement.normalize('NFC').toLocaleLowerCase('de-DE');
+  const match = strategyTopics.find(entry => entry.match.test(normalized));
+  if (!match) return null;
+
+  const offset = Number.isSafeInteger(variation) ? variation : 0;
+  const index = ((offset % match.variants.length) + match.variants.length) % match.variants.length;
+  const [green, yellow, red] = match.variants[index];
+
+  return {
+    green: { answer: green, bridge: '', why: 'Die Frage lenkt den Blick auf einen konkreten Fall.' },
+    yellow: { answer: yellow, bridge: '', why: 'Ein Bild bringt den Denkfehler auf den Punkt.' },
+    red: { answer: red, bridge: '', why: 'Du formulierst eine Grenze und schließt den Austausch ab.' },
+    care: 'Du entscheidest, ob du antworten möchtest und welcher Ton zu dir passt.',
+    safety: '',
+    topic: match.topic,
+    matched: true,
+  };
+}
+
+const demoAnswer = function demoAnswer(statement, variation = 0) {
   const t = statement.toLocaleLowerCase('de'); let topic = 'Allgemeine Gesprächshilfe'; let choices;
   if (/(umbringen|abstechen|verprügeln|erschlagen|schlag dich|bring dich um|töte|töten|gewalt androhen)/u.test(t)) return { ...pack('Ich möchte Abstand. Können wir das Gespräch jetzt beenden?', 'Ich beende dieses Gespräch jetzt und hole mir Unterstützung.', 'Stopp. Ich möchte nicht bedroht werden und gehe jetzt.', '', false), care: 'Du schuldest niemandem eine schlagfertige Reaktion.', safety: 'Bei Bedrohung: Halte Abstand und suche Unterstützung bei einer sicheren Person. Du musst das Gespräch nicht fortsetzen.', topic: 'Selbstschutz', matched: true };
+  const tailored = strategyAnswer(statement, variation);
+  if (tailored) return tailored;
   if (/(ausländer|geflüchtet|flüchtling|migrant|asyl)/u.test(t) && /(arbeit|job|arbeitspl)/u.test(t)) {
     topic = 'Herkunft und Arbeit'; choices = [pack('Welche konkrete Situation meinst du, und warum ist dabei die Herkunft entscheidend?', 'Ein Arbeitsvertrag fragt nach Fähigkeiten. Vielleicht sollten wir das auch tun.', 'Ich möchte Menschen nach ihrem Handeln beurteilen, nicht nach ihrer Herkunft.', 'Was wäre aus deiner Sicht eine faire Lösung für alle Beteiligten?'), pack('Was genau ist passiert? Lass uns über den konkreten Fall sprechen.', 'Herkunft ist kein Beruf. Über Fähigkeiten lässt sich besser reden.', 'Über Arbeit können wir reden. Pauschale Abwertung von Menschen möchte ich dabei nicht mittragen.', 'Welches konkrete Problem möchtest du lösen?')];
   } else if (/(frau|mädchen|männer|jungen)/u.test(t) && /(technik|können|gehören|küche|führen)/u.test(t)) {
@@ -86,7 +185,7 @@ function openDialog(id) { const d = $(id); if (d && !d.open) { if (state.recordi
 document.querySelectorAll('[data-open]').forEach(b => b.addEventListener('click', () => { if (b.dataset.open === 'studio-dialog') { $('material').value = state.material; $('material-message').textContent = ''; } openDialog(b.dataset.open); }));
 document.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', () => b.closest('dialog').close()));
 document.querySelectorAll('dialog').forEach(d => d.addEventListener('click', e => { if (e.target === d) { const r = d.getBoundingClientRect(); if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) d.close(); } }));
-function setBusy(value) { state.busy = value; $('submit-button').disabled = value; $('another-button').disabled = value; $('mic-button').disabled = value; $('submit-label').textContent = value ? 'Worte werden gesucht …' : 'Antwort finden'; $('result-card').classList.toggle('loading', value); $('result-card').setAttribute('aria-busy', String(value)); }
+function setBusy(value) { state.busy = value; document.querySelectorAll('[data-tone]').forEach(button => { button.disabled = value || state.recording; }); $('another-button').disabled = value; $('mic-button').disabled = value;  $('result-card').classList.toggle('loading', value); $('result-card').setAttribute('aria-busy', String(value)); }
 function renderMode() {
   $('mode-badge').textContent = state.mode === 'ai' ? 'KI · individuelle Antwort' : 'Demo · vorbereitete Antworten';
   $('choose-demo').setAttribute('aria-pressed', String(state.mode === 'demo')); $('choose-ai').setAttribute('aria-pressed', String(state.mode === 'ai'));
@@ -102,8 +201,17 @@ function inputChanged() { $('char-count').textContent = $('statement').value.len
 $('statement').addEventListener('input', inputChanged);
 $('statement').addEventListener('keydown', e => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); requestAnswer(); } });
 document.querySelectorAll('[data-example]').forEach(b => b.addEventListener('click', () => { $('statement').value = b.dataset.example; inputChanged(); $('statement').focus(); }));
-function setTone(tone) { state.tone = tone; document.querySelectorAll('[data-tone]').forEach(b => { const active = b.dataset.tone === tone; b.setAttribute('aria-checked', String(active)); b.tabIndex = active ? 0 : -1; }); if (state.result) renderResult(); }
-const tones = [...document.querySelectorAll('[data-tone]')]; tones.forEach((b, i) => { b.addEventListener('click', () => setTone(b.dataset.tone)); b.addEventListener('keydown', e => { let j = i; if (['ArrowRight', 'ArrowDown'].includes(e.key)) j = (i + 1) % 3; else if (['ArrowLeft', 'ArrowUp'].includes(e.key)) j = (i + 2) % 3; else if (e.key === 'Home') j = 0; else if (e.key === 'End') j = 2; else return; e.preventDefault(); tones[j].focus(); setTone(tones[j].dataset.tone); }); });
+function setTone(tone) {
+  state.tone = tone;
+  document.querySelectorAll('[data-tone]').forEach(button => {
+    button.setAttribute('aria-pressed', String(button.dataset.tone === tone));
+  });
+}
+document.querySelectorAll('[data-tone]').forEach(button => button.addEventListener('click', () => {
+  const repeat = state.tone === button.dataset.tone && Boolean(state.result);
+  setTone(button.dataset.tone);
+  requestAnswer(repeat);
+}));
 function renderResult() {
   const r = state.result; if (!r) return; const selected = r[state.tone];
   $('result-card').hidden = false; $('result-card').dataset.tone = state.tone;
@@ -124,13 +232,13 @@ async function requestAnswer(next = false) {
   if (next) state.variation++; else if (state.statement !== statement) state.variation = 0;
   state.statement = statement; const id = ++state.requestId; const mode = state.mode; const material = state.material;
   const controller = new AbortController(); const timeout = setTimeout(() => controller.abort(), 30000);
-  message(); setBusy(true);
+  message(); setBusy(true); if (state.mode === 'ai') message('Worte werden gesucht …');
   try {
     const response = await demoFetch('/api/answer', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ statement, mode, consent: state.consent, material, variation: state.variation }), signal: controller.signal });
     const data = await response.json(); if (!response.ok) throw new Error(data.error || 'Die Antwort konnte gerade nicht gefunden werden.');
     if (!data.green?.answer || !data.yellow?.answer || !data.red?.answer) throw new Error('Es kam keine vollständige Antwort an. Bitte versuche es erneut.');
     if (id !== state.requestId || $('statement').value.trim() !== statement || state.mode !== mode || state.material !== material) { message('Deine Eingabe wurde geändert. Finde dazu bitte eine neue Antwort.'); return; }
-    state.result = data; renderResult();
+    message(); state.result = data; renderResult();
     if (window.matchMedia('(max-width: 720px)').matches) $('result-card').scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'nearest' });
   } catch (error) { if (id === state.requestId) message(error.name === 'AbortError' ? 'Die Antwort dauert gerade zu lange. Bitte versuche es noch einmal.' : error.message); }
   finally { clearTimeout(timeout); if (id === state.requestId) setBusy(false); }
@@ -146,7 +254,7 @@ try { const saved = localStorage.getItem(storageKey); if (saved) { const parsed 
 $('material-apply').addEventListener('click', () => { const text = $('material').value.trim(); if (text !== state.material) { state.material = text; state.consent = false; invalidate(); } try { if ($('remember-material').checked) localStorage.setItem(storageKey, JSON.stringify({ material: text })); else localStorage.removeItem(storageKey); } catch { $('material-message').textContent = 'Das Speichern auf diesem Gerät ist nicht möglich. Deine Hinweise bleiben für diese Sitzung übernommen.'; return; } $('studio-dialog').close(); toast(text ? 'Hinweise übernommen. Sie werden im KI Modus berücksichtigt.' : 'Die Werkstatt ist jetzt leer.'); });
 $('material-clear').addEventListener('click', () => { state.material = ''; $('material').value = ''; $('remember-material').checked = false; state.consent = false; try { localStorage.removeItem(storageKey); } catch {} invalidate(); $('material-message').textContent = 'Hinweise aus der Sitzung und dem Gerätespeicher gelöscht.'; });
 $('material-file').addEventListener('change', async e => { const file = e.target.files?.[0]; if (!file) return; try { if (!/\.(txt|md)$/i.test(file.name) || file.size > 100000) throw new Error('Bitte wähle eine .txt oder .md Datei mit höchstens 100 KB.'); const text = await file.text(); if (text.length > 12000) throw new Error('Die Datei enthält mehr als 12.000 Zeichen. Bitte kürze sie vor dem Einlesen.'); $('material').value = text; $('material-message').textContent = 'Datei eingelesen. Mit „Hinweise übernehmen“ bestätigen.'; } catch (error) { $('material-message').textContent = error.message; } e.target.value = ''; });
-function listening(active) { state.recording = active; $('mic-button').setAttribute('aria-pressed', String(active)); $('mic-label').textContent = active ? 'Stoppen' : 'Einsprechen'; $('submit-button').disabled = active || state.busy; }
+function listening(active) { state.recording = active; $('mic-button').setAttribute('aria-pressed', String(active)); $('mic-label').textContent = active ? 'Stoppen' : 'Einsprechen'; document.querySelectorAll('[data-tone]').forEach(button => { button.disabled = active || state.busy; }); }
 function startMic() {
   const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!Recognition) { message('Dieser Browser unterstützt die Spracheingabe nicht. Du kannst die Aussage eintippen oder die Diktierfunktion deiner Handytastatur nutzen.'); return; }
@@ -161,7 +269,7 @@ function startMic() {
 }
 $('mic-button').addEventListener('click', () => { if (state.recording) { state.recognition?.stop(); return; } if (!(window.SpeechRecognition || window.webkitSpeechRecognition)) { startMic(); return; } if (state.micConsent) startMic(); else openDialog('mic-dialog'); });
 $('mic-confirm').addEventListener('click', () => { state.micConsent = true; $('mic-dialog').close(); startMic(); });
-function disableShake() { state.shake = false; window.removeEventListener('devicemotion', motion); state.lastMotion = null; state.peaks = []; clearTimeout(sensorTimer); $('shake-button').setAttribute('aria-pressed', 'false'); $('shake-button').setAttribute('aria-label', 'Schütteln zum Antworten aktivieren'); $('shake-note').textContent = 'Oder auf dem Handy: Schütteln aktivieren.'; }
+function disableShake() { state.shake = false; window.removeEventListener('devicemotion', motion); state.lastMotion = null; state.peaks = []; clearTimeout(sensorTimer); $('shake-button').setAttribute('aria-pressed', 'false'); $('shake-button').setAttribute('aria-label', 'Schütteln zum Antworten aktivieren'); $('shake-note').textContent = 'Schütteln: Antwort in der zuletzt gewählten Farbe.'; }
 function motion(event) {
   if (!state.shake) return; const a = event.accelerationIncludingGravity; if (!a || [a.x,a.y,a.z].some(v => typeof v !== 'number')) return;
   state.motionSeen = true; const now = Date.now(); const current = { x: a.x, y: a.y, z: a.z, time: now }; const old = state.lastMotion; state.lastMotion = current;
@@ -174,11 +282,11 @@ function motion(event) {
 }
 $('shake-button').addEventListener('click', async () => {
   if (state.shake) { disableShake(); toast('Schütteln ausgeschaltet.'); return; }
-  if (typeof DeviceMotionEvent === 'undefined' || !window.isSecureContext) { toast('Schütteln ist hier nicht verfügbar. Der Knopf funktioniert genauso.'); return; }
+  if (typeof DeviceMotionEvent === 'undefined' || !window.isSecureContext) { toast('Schütteln ist hier nicht verfügbar. Tippe stattdessen auf eine Ampelfarbe.'); return; }
   try { if (typeof DeviceMotionEvent.requestPermission === 'function') { const permission = await DeviceMotionEvent.requestPermission(); if (permission !== 'granted') { toast('Der Bewegungssensor wurde nicht freigegeben. Nutze den Knopf.'); return; } } }
   catch { toast('Der Bewegungssensor ist hier nicht verfügbar. Nutze den Knopf.'); return; }
   state.shake = true; state.motionSeen = false; window.addEventListener('devicemotion', motion, { passive: true }); $('shake-button').setAttribute('aria-pressed', 'true'); $('shake-button').setAttribute('aria-label', 'Schütteln zum Antworten ausschalten'); $('shake-note').textContent = 'Schütteln ist aktiv. Zum Antworten das Handy kurz schütteln.'; toast('Schütteln aktiviert. Du kannst es mit demselben Knopf ausschalten.');
-  sensorTimer = setTimeout(() => { if (state.shake && !state.motionSeen) $('shake-note').textContent = 'Noch keine Sensordaten. Öffne die App direkt auf deinem Handy oder nutze den Knopf.'; }, 4000);
+  sensorTimer = setTimeout(() => { if (state.shake && !state.motionSeen) $('shake-note').textContent = 'Noch keine Sensordaten. Öffne die App direkt auf deinem Handy oder tippe auf eine Ampelfarbe.'; }, 4000);
 });
 document.addEventListener('visibilitychange', () => { state.peaks = []; state.lastMotion = null; if (document.hidden && state.recording) state.recognition?.stop(); });
 demoFetch('/api/status', { cache: 'no-store' }).then(r => { if (!r.ok) throw new Error(); return r.json(); }).then(data => { state.aiReady = data.aiReady === true; state.providerName = typeof data.providerName === 'string' ? data.providerName : ''; state.mode = state.aiReady ? 'ai' : 'demo'; renderMode(); }).catch(() => { renderMode(); $('ai-status').textContent = 'Der Verbindungsstatus konnte nicht geprüft werden. Versuche es nach dem Neuladen erneut.'; });
