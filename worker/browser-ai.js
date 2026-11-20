@@ -75,18 +75,58 @@ export function createBrowserAI({
         reject(new Error('Die lokale KI konnte im Browser nicht gestartet werden.'));
       }, { once: true });
     });
-    engine = await Promise.race([
+    const loaded = await Promise.race([
       runtime.CreateWebWorkerMLCEngine(session.worker, variant, {
         initProgressCallback: ({ progress: fraction }) => {
           if (signal.aborted) return;
           const percent = Math.min(100, Math.max(0, Math.floor((fraction || 0) * 100)));
-          progress(percent === 100 ? selected.name + ' wird vorbereitet …' : selected.name + ' wird geladen … ' + percent + ' %');
+          progress(percent === 100 ? selected.name + ' wird vorbereitet …' : selected.name + ' wird geladen … ' + percent + ' %', percent / 100);
         },
       }, chatOptions),
       workerFailure,
     ]);
+    signal.throwIfAborted();
+    engine = loaded;
     activeModel = model;
     return engine;
+  }
+
+  async function preload(signal, report) {
+    signal.throwIfAborted();
+    let stop;
+    const cancelled = new Promise((_, reject) => {
+      stop = () => reject(signal.reason);
+      signal.addEventListener('abort', stop, { once: true });
+    });
+    const failed = [];
+    try {
+      const adapter = await Promise.race([getAdapter(), cancelled]);
+      const supported = Object.entries(browserModels).filter(([, item]) => modelVariant(item, adapter));
+      if (!supported.length) throw new Error('Auf diesem Gerät ist kein lokales Modell verfügbar.');
+      const runtime = await Promise.race([loadRuntime(), cancelled]);
+      for (const [index, [id, item]] of supported.entries()) {
+        signal.throwIfAborted();
+        const update = (fraction, ready = false) => report({ id, name: item.name, index, total: supported.length, fraction, ready });
+        update(0);
+        try {
+          const variant = modelVariant(item, adapter);
+          const cached = await Promise.race([runtime.hasModelInCache(variant).catch(() => false), cancelled]);
+          if (!cached) {
+            await Promise.race([open(id, (_, fraction = 0) => update(fraction), signal), cancelled]);
+          }
+          signal.throwIfAborted();
+          update(1, true);
+        } catch {
+          signal.throwIfAborted();
+          failed.push(item.name);
+        } finally {
+          resetEngine();
+        }
+      }
+      return { failed, total: supported.length };
+    } finally {
+      signal.removeEventListener('abort', stop);
+    }
   }
 
   function pickOptions(candidates, tone) {
@@ -175,5 +215,5 @@ export function createBrowserAI({
     }
   }
 
-  return { answer, release, status };
+  return { answer, release, status, preload };
 }

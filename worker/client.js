@@ -7,7 +7,7 @@ let models = [], model;
 const currentModel = () => models.find(item => item.id === model);
 function resetVariants() { state.nextVariation = { green: 0, yellow: 0, red: 0 }; }
 const toneLabels = { green: 'Gespräch öffnen', yellow: 'Freches Statement', red: 'Klare Grenze · Gespräch beenden' };
-let toastTimer, sensorTimer, localRequest;
+let toastTimer, sensorTimer, localRequest, preloadRequest;
 function toast(text) { $('toast').textContent = text; clearTimeout(toastTimer); toastTimer = setTimeout(() => { $('toast').textContent = ''; }, 4200); }
 function message(text = '') { $('form-message').textContent = text; }
 function hasDialog() { return Boolean(document.querySelector('dialog[open]')); }
@@ -44,6 +44,12 @@ function showModelOptions() {
     options.append(button);
   }
   options.hidden = false;
+  const supported = models.filter(item => item.supported);
+  $('preload-option').hidden = supported.length === 0;
+  $('preload-toggle').textContent = supported.length === 3 ? 'Alle drei Modelle vorladen' : 'Verfügbare Modelle vorladen';
+  const mb = supported.reduce((sum, item) => sum + item.downloadMB, 0);
+  const size = mb >= 1000 ? (mb / 1000).toLocaleString('de-DE', { maximumFractionDigits: 2 }) + ' GB' : mb + ' MB';
+  $('preload-description').textContent = 'Der Download benötigt bis zu ' + size + '. Bereits gespeicherte Modelle werden übersprungen.';
 }
 function invalidate() {
   if (!state.result) return;
@@ -76,6 +82,7 @@ function renderResult() {
   if (r.safety) state.details = true; $('result-extra').hidden = !state.details; $('detail-button').setAttribute('aria-expanded', String(state.details));
 }
 async function requestAnswer() {
+  if (preloadRequest) { message('Die Modelle werden gerade vorgeladen. Du kannst den Download im Menü abbrechen.'); return; }
   if (state.busy || state.recording) return; const statement = $('statement').value.trim();
   if (!statement) { message('Schreib oder sprich zuerst die Aussage ein.'); $('statement').focus(); return; }
   if (statement.length > 1200) { message('Bitte kürze die Aussage auf höchstens 1.200 Zeichen.'); return; }
@@ -127,6 +134,7 @@ $('answer-form').addEventListener('submit', e => { e.preventDefault(); requestAn
 $('detail-button').addEventListener('click', () => { state.details = !state.details; $('result-extra').hidden = !state.details; $('detail-button').setAttribute('aria-expanded', String(state.details)); });
 $('copy-button').addEventListener('click', async () => { const answer = $('answer-text').textContent; if (!state.result || !answer) return; try { await navigator.clipboard.writeText(answer); toast('Antwort kopiert.'); } catch { toast('Kopieren ist hier nicht verfügbar. Markiere den Antworttext zum Kopieren.'); } });
 function chooseMode(mode, nextModel = model) {
+  if (preloadRequest) { toast('Warte auf den Download oder brich ihn ab.'); return; }
   if (state.busy) { toast('Bitte warte auf die laufende Antwort oder brich sie ab.'); return; }
   if (mode === 'ai' && !state.aiReady) { toast('Die KI ist noch nicht eingerichtet. Die Demo ist nutzbar.'); return; }
   if (mode !== state.mode || nextModel !== model) {
@@ -141,6 +149,55 @@ function chooseMode(mode, nextModel = model) {
   $('mode-dialog').close();
 }
 $('choose-demo').addEventListener('click', () => chooseMode('demo')); $('choose-ai').addEventListener('click', () => chooseMode('ai'));
+$('preload-toggle').addEventListener('click', () => {
+  const panel = $('preload-panel');
+  panel.hidden = !panel.hidden;
+  $('preload-toggle').setAttribute('aria-expanded', String(!panel.hidden));
+  if (!panel.hidden) $('preload-start').focus();
+});
+$('preload-cancel').addEventListener('click', () => preloadRequest?.abort());
+$('preload-start').addEventListener('click', async () => {
+  if (!state.localAI || preloadRequest) return;
+  if (state.busy) { toast('Bitte warte auf die laufende Antwort oder brich sie ab.'); return; }
+  const controller = new AbortController();
+  preloadRequest = controller;
+  const bar = $('preload-progress');
+  const label = $('preload-status');
+  const start = $('preload-start');
+  const cancel = $('preload-cancel');
+  start.hidden = true;
+  cancel.hidden = false;
+  cancel.focus();
+  $('preload-toggle').disabled = true;
+  label.textContent = 'Download wird vorbereitet …';
+  bar.value = 0;
+  bar.hidden = false;
+  try {
+    const response = await fetch('/api/preload', { signal: controller.signal }, ({ id, name, index, total, fraction, ready }) => {
+      bar.max = total;
+      bar.value = Math.max(bar.value, index + fraction);
+      const step = 'Modell ' + (index + 1) + ' von ' + total + ' · ' + name;
+      if (label.textContent !== step) label.textContent = step;
+      if (ready) localConsent.add(id);
+    });
+    const { failed, total } = await response.json();
+    bar.value = total;
+    label.textContent = failed.length
+      ? (total - failed.length) + ' von ' + total + ' Modellen bereit. Fehler bei ' + failed.join(', ') + '. Du kannst den Download erneut starten.'
+      : total + ' von ' + total + ' Modellen sind auf diesem Gerät bereit.';
+  } catch {
+    label.textContent = controller.signal.aborted
+      ? 'Download abgebrochen. Fertig geladene Modelle bleiben gespeichert.'
+      : 'Der Download konnte nicht gestartet werden. Prüfe deine Verbindung und versuche es erneut.';
+  } finally {
+    preloadRequest = undefined;
+    bar.hidden = true;
+    cancel.hidden = true;
+    start.hidden = false;
+    $('preload-toggle').disabled = false;
+    if ($('mode-dialog').open) start.focus();
+  }
+});
 $('ai-confirm').addEventListener('click', () => {
   if (state.localAI) localConsent.add(model); else state.consent = true;
   $('ai-dialog').close();

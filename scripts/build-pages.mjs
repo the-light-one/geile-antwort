@@ -14,6 +14,7 @@ const browserDemo = [
   'async function browserFetch(path, options, progress) {',
   "  if (path === '/api/status') return Response.json(await localAI.status());",
   "  if (path === '/api/release') { localAI.release(); return new Response(null, { status: 204 }); }",
+  "  if (path === '/api/preload') return Response.json(await localAI.preload(options.signal, progress));",
   '  const input = JSON.parse(options.body);',
   '  const reference = demoAnswer(input.statement, input.variation);',
   "  if (input.mode === 'demo') return Response.json({ ...reference, mode: 'demo' });",

@@ -12,6 +12,8 @@ Eine Web-App für den Moment, in dem nach einem irritierenden oder abwertenden S
 
 In der [App auf GitHub Pages](https://the-light-one.github.io/geile-antwort/) kannst du unter „KI auswählen“ zwischen der Demo und Llama 3.2 1B, Qwen3.5 0.8B oder Gemma 3 1B wechseln. Das gewählte Modell lädt erst beim ersten Einsatz nach deiner Bestätigung und läuft lokal mit WebGPU. Die App zeigt die ungefähre Downloadgröße an. Zur Auswahl eines passenden Satzes bleiben Eingaben und Werkstatthinweise auf dem Gerät.
 
+Unter „Alle drei Modelle vorladen“ kannst du die auf deinem Gerät verfügbaren Modelle nacheinander in den Browserspeicher laden. Für alle drei fallen zusammen etwa 1,75 GB an. Ein Abbruch stoppt den aktuellen Download. Bereits gespeicherte Modelle werden beim nächsten Versuch übersprungen.
+
 ## Lokal ausprobieren
 
 Mit Node.js 22 oder neuer im Projektordner `node scripts/dev.mjs` ausführen und http://localhost:8787 öffnen. Die Demo nutzt vorbereitete Antworten. Texteingabe funktioniert unabhängig von den Gerätefunktionen. Mikrofon und Schütteln hängen von Browser, Gerät und Freigaben ab.
