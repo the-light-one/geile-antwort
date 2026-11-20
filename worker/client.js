@@ -2,7 +2,7 @@ export const clientScript = String.raw`(() => {
 'use strict';
 const $ = id => document.getElementById(id);
 const catalogue = typeof browserModels === 'undefined' ? null : browserModels;
-const state = { tone: 'green', mode: 'demo', aiReady: false, localAI: Boolean(catalogue), providerName: '', busy: false, result: null, statement: '', material: '', nextVariation: { green: 0, yellow: 0, red: 0 }, consent: false, micConsent: false, recognition: null, recording: false, shake: false, motionSeen: false, lastMotion: null, lastShake: 0, peaks: [], details: false, requestId: 0 };
+const state = { tone: 'green', mode: 'demo', aiReady: false, localAI: Boolean(catalogue), providerName: '', busy: false, result: null, statement: '', material: '', nextVariation: { green: 0, yellow: 0, red: 0 }, consent: false, shake: false, motionSeen: false, lastMotion: null, lastShake: 0, peaks: [], details: false, requestId: 0 };
 const localConsent = new Set();
 let models = [], model, graphics = 'idle';
 const currentModel = () => models.find(item => item.id === model);
@@ -15,7 +15,6 @@ function hasDialog() { return Boolean(document.querySelector('dialog[open]')); }
 function openDialog(id) {
   const dialog = $(id);
   if (!dialog || dialog.open) return;
-  if (state.recording) state.recognition?.stop();
   dialog.showModal();
   if (id === 'mode-dialog') {
     modeMessage();
@@ -24,8 +23,8 @@ function openDialog(id) {
 }
 document.querySelectorAll('[data-open]').forEach(b => b.addEventListener('click', () => { if (b.dataset.open === 'studio-dialog') { $('material').value = state.material; $('material-message').textContent = ''; } openDialog(b.dataset.open); }));
 document.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', () => b.closest('dialog').close()));
-document.querySelectorAll('dialog').forEach(d => d.addEventListener('click', e => { if (e.target === d) { const r = d.getBoundingClientRect(); if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) d.close(); } }));
-function setBusy(value) { state.busy = value; document.querySelectorAll('[data-tone]').forEach(button => { button.disabled = value || state.recording; }); $('another-button').disabled = value; $('mic-button').disabled = value;  $('result-card').classList.toggle('loading', value); $('result-card').setAttribute('aria-busy', String(value)); }
+document.querySelectorAll('dialog:not(#startup-dialog)').forEach(d => d.addEventListener('click', e => { if (e.target === d) { const r = d.getBoundingClientRect(); if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) d.close(); } }));
+function setBusy(value) { state.busy = value; document.querySelectorAll('[data-tone]').forEach(button => { button.disabled = value; }); $('another-button').disabled = value; $('result-card').classList.toggle('loading', value); $('result-card').setAttribute('aria-busy', String(value)); }
 function modeMessage(text = '') { $('mode-message').textContent = text; }
 function renderMode() {
   if (!state.result) $('mode-badge').textContent = state.mode === 'ai' ? 'KI · individuelle Antwort' : 'Demo · vorbereitete Antworten';
@@ -39,7 +38,7 @@ function renderMode() {
   $('ai-status').textContent = {
     idle: 'Die Grafikprüfung startet beim Öffnen dieses Menüs.',
     checking: 'Grafikunterstützung wird geprüft …',
-    ready: 'Das ausgewählte Modell lädt beim ersten Einsatz. Deine Eingabe bleibt auf dem Gerät.',
+    ready: 'Die Modelle laufen auf deinem Gerät. Du kannst das aktive Modell jederzeit wechseln.',
     'timed-out': 'Der Browser hat auf die Grafikprüfung nicht geantwortet. Du kannst erneut prüfen oder die Demo nutzen.',
     unavailable: 'Dieser Browser stellt auf dem Gerät kein nutzbares WebGPU bereit. Die Demo ist verfügbar.',
     error: 'Die Grafikprüfung ist fehlgeschlagen. Du kannst erneut prüfen oder die Demo nutzen.',
@@ -120,9 +119,9 @@ function renderResult() {
   if (r.safety) state.details = true; $('result-extra').hidden = !state.details; $('detail-button').setAttribute('aria-expanded', String(state.details));
 }
 async function requestAnswer() {
-  if (preloadRequest) { message('Die Modelle werden gerade vorgeladen. Du kannst den Download im Menü abbrechen.'); return; }
-  if (state.busy || state.recording) return; const statement = $('statement').value.trim();
-  if (!statement) { message('Schreib oder sprich zuerst die Aussage ein.'); $('statement').focus(); return; }
+  if (preloadRequest && !preloadRequest.signal.aborted) { message('Die Modelle werden gerade vorgeladen. Du kannst den Download im Menü abbrechen.'); return; }
+  if (state.busy) return; const statement = $('statement').value.trim();
+  if (!statement) { message('Tippe zuerst die Aussage ein.'); $('statement').focus(); return; }
   if (statement.length > 1200) { message('Bitte kürze die Aussage auf höchstens 1.200 Zeichen.'); return; }
   if (state.mode === 'ai' && !state.aiReady) { message('Die KI ist noch nicht verbunden. Du kannst in der Zwischenzeit die Demo nutzen.'); return; }
   const local = state.mode === 'ai' && state.localAI;
@@ -172,7 +171,7 @@ $('answer-form').addEventListener('submit', e => { e.preventDefault(); requestAn
 $('detail-button').addEventListener('click', () => { state.details = !state.details; $('result-extra').hidden = !state.details; $('detail-button').setAttribute('aria-expanded', String(state.details)); });
 $('copy-button').addEventListener('click', async () => { const answer = $('answer-text').textContent; if (!state.result || !answer) return; try { await navigator.clipboard.writeText(answer); toast('Antwort kopiert.'); } catch { toast('Kopieren ist hier nicht verfügbar. Markiere den Antworttext zum Kopieren.'); } });
 function chooseMode(mode, nextModel = model) {
-  if (preloadRequest) { modeMessage('Warte auf den Download oder brich ihn ab.'); return; }
+  if (preloadRequest && !preloadRequest.signal.aborted) { modeMessage('Warte auf den Download oder brich ihn ab.'); return; }
   if (state.busy) { modeMessage('Bitte warte auf die laufende Antwort oder brich sie ab.'); return; }
   if (mode === 'ai' && !state.aiReady) { modeMessage('Die KI ist derzeit nicht verfügbar. Du kannst die Demo nutzen.'); return; }
   if (mode !== state.mode || nextModel !== model) {
@@ -195,29 +194,48 @@ $('preload-toggle').addEventListener('click', () => {
   if (!panel.hidden) $('preload-start').focus();
 });
 $('preload-cancel').addEventListener('click', () => preloadRequest?.abort());
-$('preload-start').addEventListener('click', async () => {
+function skipStartup() {
+  preloadRequest?.abort();
+  $('startup-dialog').close();
+}
+$('startup-demo').addEventListener('click', skipStartup);
+$('startup-dialog').addEventListener('cancel', event => { event.preventDefault(); skipStartup(); });
+$('preload-start').addEventListener('click', () => void prepareModels());
+async function prepareModels(startup = false) {
   if (!state.localAI || preloadRequest) return;
   if (state.busy) { modeMessage('Bitte warte auf die laufende Antwort oder brich sie ab.'); return; }
   modeMessage();
   const controller = new AbortController();
   preloadRequest = controller;
-  const meter = $('preload-meter');
-  const bar = $('preload-progress');
-  const percent = $('preload-percent');
-  const label = $('preload-status');
+  const prefix = startup ? 'startup-' : 'preload-';
+  const meter = $(prefix + 'meter');
+  const bar = $(prefix + 'progress');
+  const percent = $(prefix + 'percent');
+  const label = $(prefix + 'status');
   const start = $('preload-start');
   const cancel = $('preload-cancel');
-  start.hidden = true;
-  cancel.hidden = false;
-  cancel.focus();
-  $('preload-toggle').disabled = true;
-  label.textContent = 'Download wird vorbereitet …';
+  if (startup) $('startup-dialog').showModal();
+  else {
+    start.hidden = true;
+    cancel.hidden = false;
+    cancel.focus();
+    $('preload-toggle').disabled = true;
+  }
+  label.textContent = startup ? 'Grafikunterstützung wird geprüft …' : 'Download wird vorbereitet …';
   let currentIndex = -1;
   bar.value = 0;
   percent.textContent = '0 %';
   meter.hidden = false;
   try {
-    const response = await fetch('/api/preload', { signal: controller.signal }, ({ id, name, index, total, fraction, ready }) => {
+    if (startup) {
+      await checkGraphics();
+      controller.signal.throwIfAborted();
+      if (!state.aiReady) {
+        message($('ai-status').textContent);
+        return;
+      }
+    }
+    const response = await fetch('/api/preload', { signal: controller.signal, startWithModel: startup }, ({ id, name, index, total, fraction, ready }) => {
       if (index !== currentIndex) {
         currentIndex = index;
         bar.value = 0;
@@ -228,23 +246,39 @@ $('preload-start').addEventListener('click', async () => {
       if (label.textContent !== step) label.textContent = step;
       if (ready) localConsent.add(id);
     });
-    const { failed, total } = await response.json();
-    label.textContent = failed.length
+    const { failed, total, preferred } = await response.json();
+    controller.signal.throwIfAborted();
+    const summary = failed.length
       ? (total - failed.length) + ' von ' + total + ' Modellen bereit. Fehler bei ' + failed.join(', ') + '. Du kannst den Download erneut starten.'
       : total + ' von ' + total + ' Modellen sind auf diesem Gerät bereit.';
+    $('preload-status').textContent = summary;
+    if (startup) {
+      if (preferred) {
+        state.mode = 'ai';
+        model = preferred;
+        renderMode();
+      }
+      if (failed.length || total < models.length) message(summary + (preferred ? '' : ' Die Demo ist verfügbar.'));
+    }
   } catch {
-    label.textContent = controller.signal.aborted
+    const failure = controller.signal.aborted
       ? 'Download abgebrochen. Fertig geladene Modelle bleiben gespeichert.'
       : 'Der Download konnte nicht gestartet werden. Prüfe deine Verbindung und versuche es erneut.';
+    $('preload-status').textContent = failure;
+    if (startup && controller.signal.aborted) void fetch('/api/release');
+    if (startup && !controller.signal.aborted) message(failure + ' Die Demo ist verfügbar.');
   } finally {
     preloadRequest = undefined;
     meter.hidden = true;
-    cancel.hidden = true;
-    start.hidden = false;
-    $('preload-toggle').disabled = false;
-    if ($('mode-dialog').open) start.focus();
+    if (startup) $('startup-dialog').close();
+    else {
+      cancel.hidden = true;
+      start.hidden = false;
+      $('preload-toggle').disabled = false;
+      if ($('mode-dialog').open) start.focus();
+    }
   }
-});
+}
 $('ai-confirm').addEventListener('click', () => {
   if (state.localAI) localConsent.add(model); else state.consent = true;
   $('ai-dialog').close();
@@ -256,30 +290,15 @@ try { const saved = localStorage.getItem(storageKey); if (saved) { const parsed 
 $('material-apply').addEventListener('click', () => { const text = $('material').value.trim(); if (text !== state.material) { state.material = text; state.consent = false; invalidate(); } try { if ($('remember-material').checked) localStorage.setItem(storageKey, JSON.stringify({ material: text })); else localStorage.removeItem(storageKey); } catch { $('material-message').textContent = 'Das Speichern auf diesem Gerät ist nicht möglich. Deine Hinweise bleiben für diese Sitzung übernommen.'; return; } $('studio-dialog').close(); toast(text ? 'Hinweise übernommen. Sie werden im KI Modus berücksichtigt.' : 'Die Werkstatt ist jetzt leer.'); });
 $('material-clear').addEventListener('click', () => { state.material = ''; $('material').value = ''; $('remember-material').checked = false; state.consent = false; try { localStorage.removeItem(storageKey); } catch {} invalidate(); $('material-message').textContent = 'Hinweise aus der Sitzung und dem Gerätespeicher gelöscht.'; });
 $('material-file').addEventListener('change', async e => { const file = e.target.files?.[0]; if (!file) return; try { if (!/\.(txt|md)$/i.test(file.name) || file.size > 100000) throw new Error('Bitte wähle eine .txt oder .md Datei mit höchstens 100 KB.'); const text = await file.text(); if (text.length > 12000) throw new Error('Die Datei enthält mehr als 12.000 Zeichen. Bitte kürze sie vor dem Einlesen.'); $('material').value = text; $('material-message').textContent = 'Datei eingelesen. Mit „Hinweise übernehmen“ bestätigen.'; } catch (error) { $('material-message').textContent = error.message; } e.target.value = ''; });
-function listening(active) { state.recording = active; $('mic-button').setAttribute('aria-pressed', String(active)); $('mic-label').textContent = active ? 'Stoppen' : 'Einsprechen'; document.querySelectorAll('[data-tone]').forEach(button => { button.disabled = active || state.busy; }); }
-function startMic() {
-  const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!Recognition) { message('Dieser Browser unterstützt die Spracheingabe nicht. Du kannst die Aussage eintippen oder die Diktierfunktion deiner Handytastatur nutzen.'); return; }
-  if (state.busy || state.recording) return;
-  const recognition = new Recognition(); state.recognition = recognition; recognition.lang = 'de-DE'; recognition.continuous = false; recognition.interimResults = false; recognition.maxAlternatives = 1;
-  const before = $('statement').value.trim(); message();
-  recognition.onstart = () => listening(true);
-  recognition.onresult = event => { const text = Array.from(event.results).filter(r => r.isFinal).map(r => r[0].transcript).join(' '); if (text) { const combined = (before ? before + ' ' : '') + text; $('statement').value = combined.slice(0, 1200); inputChanged(); if (combined.length > 1200) message('Die Spracheingabe wurde auf 1.200 Zeichen gekürzt. Bitte prüfe den Text.'); else toast('Text erkannt. Prüfe ihn und wähle „Antwort finden“.'); } };
-  recognition.onerror = event => { const errors = { 'not-allowed': 'Der Mikrofonzugriff wurde nicht erlaubt. Du kannst die Aussage weiterhin eintippen.', 'service-not-allowed': 'Die Spracherkennung ist in diesem Browser nicht erlaubt.', 'audio-capture': 'Es wurde kein Mikrofon gefunden.', 'no-speech': 'Es wurde keine Sprache erkannt. Versuche es noch einmal.', 'network': 'Die Spracherkennung konnte ihren Dienst nicht erreichen.' }; if (event.error !== 'aborted') message(errors[event.error] || 'Die Spracherkennung wurde unterbrochen. Bitte versuche es erneut.'); };
-  recognition.onend = () => { listening(false); state.recognition = null; };
-  try { listening(true); recognition.start(); } catch { listening(false); message('Die Spracherkennung konnte nicht gestartet werden. Du kannst den Satz eintippen.'); }
-}
-$('mic-button').addEventListener('click', () => { if (state.recording) { state.recognition?.stop(); return; } if (!(window.SpeechRecognition || window.webkitSpeechRecognition)) { startMic(); return; } if (state.micConsent) startMic(); else openDialog('mic-dialog'); });
-$('mic-confirm').addEventListener('click', () => { state.micConsent = true; $('mic-dialog').close(); startMic(); });
 function disableShake() { state.shake = false; window.removeEventListener('devicemotion', motion); state.lastMotion = null; state.peaks = []; clearTimeout(sensorTimer); $('shake-button').setAttribute('aria-pressed', 'false'); $('shake-button').setAttribute('aria-label', 'Schütteln zum Antworten aktivieren'); $('shake-note').textContent = 'Schütteln: Antwort in der zuletzt gewählten Farbe.'; }
 function motion(event) {
   if (!state.shake) return; const a = event.accelerationIncludingGravity; if (!a || [a.x,a.y,a.z].some(v => typeof v !== 'number')) return;
   state.motionSeen = true; const now = Date.now(); const current = { x: a.x, y: a.y, z: a.z, time: now }; const old = state.lastMotion; state.lastMotion = current;
-  if (!old || now - old.time > 500 || state.busy || state.recording || hasDialog() || document.hidden || now - state.lastShake < 3500) return;
+  if (!old || now - old.time > 500 || state.busy || hasDialog() || document.hidden || now - state.lastShake < 3500) return;
   const delta = Math.hypot(current.x - old.x, current.y - old.y, current.z - old.z);
   if (delta < 17) return; state.peaks = state.peaks.filter(t => now - t < 800); if (!state.peaks.length || now - state.peaks[state.peaks.length - 1] > 80) state.peaks.push(now);
   if (state.peaks.length < 3) return; state.peaks = []; state.lastShake = now;
-  if (!$('statement').value.trim()) { message('Schreib oder sprich zuerst die Aussage ein.'); return; }
+  if (!$('statement').value.trim()) { message('Tippe zuerst die Aussage ein.'); return; }
   requestAnswer();
 }
 $('shake-button').addEventListener('click', async () => {
@@ -290,11 +309,12 @@ $('shake-button').addEventListener('click', async () => {
   state.shake = true; state.motionSeen = false; window.addEventListener('devicemotion', motion, { passive: true }); $('shake-button').setAttribute('aria-pressed', 'true'); $('shake-button').setAttribute('aria-label', 'Schütteln zum Antworten ausschalten'); $('shake-note').textContent = 'Schütteln ist aktiv. Zum Antworten das Handy kurz schütteln.'; toast('Schütteln aktiviert. Du kannst es mit demselben Knopf ausschalten.');
   sensorTimer = setTimeout(() => { if (state.shake && !state.motionSeen) $('shake-note').textContent = 'Noch keine Sensordaten. Öffne die App direkt auf deinem Handy oder tippe auf eine Ampelfarbe.'; }, 4000);
 });
-document.addEventListener('visibilitychange', () => { state.peaks = []; state.lastMotion = null; if (document.hidden && state.recording) state.recognition?.stop(); });
+document.addEventListener('visibilitychange', () => { state.peaks = []; state.lastMotion = null; });
 if (state.localAI) {
   models = Object.entries(catalogue).map(([id, item]) => ({ id, name: item.name, downloadMB: item.downloadMB, supported: false }));
   showModelOptions();
   renderMode();
+  void prepareModels(true);
 } else fetch('/api/status', { cache: 'no-store' }).then(r => { if (!r.ok) throw new Error(); return r.json(); }).then(data => {
   state.aiReady = data.aiReady === true;
   state.providerName = typeof data.providerName === 'string' ? data.providerName : '';

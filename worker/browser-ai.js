@@ -1,4 +1,4 @@
-// Built into the GitHub Pages version. Loading the runtime is opt-in.
+// Built into the GitHub Pages version. Models are prepared in the browser.
 export const browserModels = {
   llama: { name: 'Llama 3.2 1B', downloadMB: 705, f16: 'Llama-3.2-1B-Instruct-q4f16_1-MLC', f32: 'Llama-3.2-1B-Instruct-q4f32_1-MLC' },
   qwen: { name: 'Qwen3.5 0.8B', downloadMB: 447, f16: 'Qwen3.5-0.8B-q4f16_1-MLC', f32: 'Qwen3.5-0.8B-q4f32_1-MLC' },
@@ -111,7 +111,7 @@ export function createBrowserAI({
     return engine;
   }
 
-  async function preload(signal, report) {
+  async function preload(signal, report, startWithModel = false) {
     signal.throwIfAborted();
     let stop;
     const cancelled = new Promise((_, reject) => {
@@ -119,31 +119,39 @@ export function createBrowserAI({
       signal.addEventListener('abort', stop, { once: true });
     });
     const failed = [];
+    const ready = [];
     try {
       const adapter = await Promise.race([checkedAdapter(), cancelled]);
       const supported = Object.entries(browserModels).filter(([, item]) => modelVariant(item, adapter));
       if (!supported.length) throw new Error('Auf diesem Gerät ist kein lokales Modell verfügbar.');
+      // Prepare Llama last at startup so the first reply can use the running model.
+      if (startWithModel) supported.sort(([a], [b]) => Number(a === 'llama') - Number(b === 'llama'));
       const runtime = await Promise.race([loadRuntime(), cancelled]);
       for (const [index, [id, item]] of supported.entries()) {
         signal.throwIfAborted();
+        const activate = startWithModel && index === supported.length - 1;
         const update = (fraction, ready = false) => report({ id, name: item.name, index, total: supported.length, fraction, ready });
         update(0);
+        let keepEngine = false;
         try {
           const variant = modelVariant(item, adapter);
           const cached = await Promise.race([runtime.hasModelInCache(variant).catch(() => false), cancelled]);
-          if (!cached) {
+          if (!cached || activate) {
+            if (cached) update(1);
             await Promise.race([open(id, (_, fraction = 0) => update(fraction), signal), cancelled]);
           }
           signal.throwIfAborted();
           update(1, true);
+          ready.push(id);
+          keepEngine = activate;
         } catch {
           signal.throwIfAborted();
           failed.push(item.name);
         } finally {
-          resetEngine();
+          if (!keepEngine) resetEngine();
         }
       }
-      return { failed, total: supported.length };
+      return { failed, total: supported.length, preferred: ready.includes('llama') ? 'llama' : ready[0] };
     } finally {
       signal.removeEventListener('abort', stop);
     }
