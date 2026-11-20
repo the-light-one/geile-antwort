@@ -1,9 +1,10 @@
 export const clientScript = String.raw`(() => {
 'use strict';
 const $ = id => document.getElementById(id);
-const state = { tone: 'green', mode: 'demo', aiReady: false, localAI: false, providerName: '', busy: false, result: null, statement: '', material: '', nextVariation: { green: 0, yellow: 0, red: 0 }, consent: false, micConsent: false, recognition: null, recording: false, shake: false, motionSeen: false, lastMotion: null, lastShake: 0, peaks: [], details: false, requestId: 0 };
+const catalogue = typeof browserModels === 'undefined' ? null : browserModels;
+const state = { tone: 'green', mode: 'demo', aiReady: false, localAI: Boolean(catalogue), providerName: '', busy: false, result: null, statement: '', material: '', nextVariation: { green: 0, yellow: 0, red: 0 }, consent: false, micConsent: false, recognition: null, recording: false, shake: false, motionSeen: false, lastMotion: null, lastShake: 0, peaks: [], details: false, requestId: 0 };
 const localConsent = new Set();
-let models = [], model;
+let models = [], model, graphics = 'idle';
 const currentModel = () => models.find(item => item.id === model);
 function resetVariants() { state.nextVariation = { green: 0, yellow: 0, red: 0 }; }
 const toneLabels = { green: 'Gespräch öffnen', yellow: 'Freches Statement', red: 'Klare Grenze · Gespräch beenden' };
@@ -11,13 +12,23 @@ let toastTimer, sensorTimer, localRequest, preloadRequest;
 function toast(text) { $('toast').textContent = text; clearTimeout(toastTimer); toastTimer = setTimeout(() => { $('toast').textContent = ''; }, 4200); }
 function message(text = '') { $('form-message').textContent = text; }
 function hasDialog() { return Boolean(document.querySelector('dialog[open]')); }
-function openDialog(id) { const d = $(id); if (d && !d.open) { if (state.recording) state.recognition?.stop(); d.showModal(); } }
+function openDialog(id) {
+  const dialog = $(id);
+  if (!dialog || dialog.open) return;
+  if (state.recording) state.recognition?.stop();
+  dialog.showModal();
+  if (id === 'mode-dialog') {
+    modeMessage();
+    if (state.localAI && graphics === 'idle') void checkGraphics();
+  }
+}
 document.querySelectorAll('[data-open]').forEach(b => b.addEventListener('click', () => { if (b.dataset.open === 'studio-dialog') { $('material').value = state.material; $('material-message').textContent = ''; } openDialog(b.dataset.open); }));
 document.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', () => b.closest('dialog').close()));
 document.querySelectorAll('dialog').forEach(d => d.addEventListener('click', e => { if (e.target === d) { const r = d.getBoundingClientRect(); if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) d.close(); } }));
 function setBusy(value) { state.busy = value; document.querySelectorAll('[data-tone]').forEach(button => { button.disabled = value || state.recording; }); $('another-button').disabled = value; $('mic-button').disabled = value;  $('result-card').classList.toggle('loading', value); $('result-card').setAttribute('aria-busy', String(value)); }
+function modeMessage(text = '') { $('mode-message').textContent = text; }
 function renderMode() {
-  $('mode-badge').textContent = state.mode === 'ai' ? 'KI · individuelle Antwort' : 'Demo · vorbereitete Antworten';
+  if (!state.result) $('mode-badge').textContent = state.mode === 'ai' ? 'KI · individuelle Antwort' : 'Demo · vorbereitete Antworten';
   $('choose-demo').setAttribute('aria-pressed', String(state.mode === 'demo')); $('choose-ai').setAttribute('aria-pressed', String(state.mode === 'ai'));
   $('mode-description').textContent = state.mode === 'demo' ? 'Die Demo wählt aus vorbereiteten Antworten und allgemeinen Gesprächshilfen. Sie erzeugt keine individuelle KI Antwort.' : 'Die KI formuliert zu deiner Aussage drei Antwortstile. Prüfe selbst, welche Antwort zur Situation passt.';
   $('ai-status').textContent = state.aiReady ? 'KI Zugang verbunden' + (state.providerName ? ' · ' + state.providerName : '') + '. Du kannst individuelle Antworten ausprobieren.' : 'Der KI Zugang ist noch nicht eingerichtet. Die Demo ist bereits nutzbar.';
@@ -25,13 +36,22 @@ function renderMode() {
   $('mode-open').textContent = state.mode === 'ai' ? currentModel().name + ' · Wechseln' : 'KI auswählen';
   $('choose-ai').hidden = true;
   $('mode-description').textContent = 'Die KI wählt aus vorbereiteten Sätzen den passenden zur Aussage und zur Ampelfarbe.';
-  $('ai-status').textContent = state.aiReady ? 'Das ausgewählte Modell lädt beim ersten Einsatz. Deine Eingabe bleibt auf dem Gerät.' : 'Dieser Browser bietet kein nutzbares WebGPU. Die Demo ist verfügbar.';
+  $('ai-status').textContent = {
+    idle: 'Die Grafikprüfung startet beim Öffnen dieses Menüs.',
+    checking: 'Grafikunterstützung wird geprüft …',
+    ready: 'Das ausgewählte Modell lädt beim ersten Einsatz. Deine Eingabe bleibt auf dem Gerät.',
+    'timed-out': 'Der Browser hat auf die Grafikprüfung nicht geantwortet. Du kannst erneut prüfen oder die Demo nutzen.',
+    unavailable: 'Dieser Browser stellt auf dem Gerät kein nutzbares WebGPU bereit. Die Demo ist verfügbar.',
+    error: 'Die Grafikprüfung ist fehlgeschlagen. Du kannst erneut prüfen oder die Demo nutzen.',
+  }[graphics];
+  $('retry-graphics').hidden = graphics === 'idle' || graphics === 'checking' || graphics === 'ready';
   for (const button of $('local-model-options').children) {
     button.setAttribute('aria-pressed', String(state.mode === 'ai' && model === button.dataset.model));
   }
 }
 function showModelOptions() {
   const options = $('local-model-options');
+  options.replaceChildren();
   for (const item of models) {
     const button = document.createElement('button');
     const size = document.createElement('span');
@@ -50,6 +70,24 @@ function showModelOptions() {
   const mb = supported.reduce((sum, item) => sum + item.downloadMB, 0);
   const size = mb >= 1000 ? (mb / 1000).toLocaleString('de-DE', { maximumFractionDigits: 2 }) + ' GB' : mb + ' MB';
   $('preload-description').textContent = 'Der Download benötigt bis zu ' + size + '. Bereits gespeicherte Modelle werden übersprungen.';
+}
+async function checkGraphics() {
+  if (graphics === 'checking') return;
+  graphics = 'checking';
+  modeMessage();
+  renderMode();
+  try {
+    const response = await fetch('/api/status', { cache: 'no-store' });
+    if (!response.ok) throw new Error();
+    const data = await response.json();
+    models = data.models;
+    graphics = data.graphics;
+    state.aiReady = graphics === 'ready';
+    showModelOptions();
+  } catch {
+    graphics = 'error';
+  }
+  renderMode();
 }
 function invalidate() {
   if (!state.result) return;
@@ -134,9 +172,9 @@ $('answer-form').addEventListener('submit', e => { e.preventDefault(); requestAn
 $('detail-button').addEventListener('click', () => { state.details = !state.details; $('result-extra').hidden = !state.details; $('detail-button').setAttribute('aria-expanded', String(state.details)); });
 $('copy-button').addEventListener('click', async () => { const answer = $('answer-text').textContent; if (!state.result || !answer) return; try { await navigator.clipboard.writeText(answer); toast('Antwort kopiert.'); } catch { toast('Kopieren ist hier nicht verfügbar. Markiere den Antworttext zum Kopieren.'); } });
 function chooseMode(mode, nextModel = model) {
-  if (preloadRequest) { toast('Warte auf den Download oder brich ihn ab.'); return; }
-  if (state.busy) { toast('Bitte warte auf die laufende Antwort oder brich sie ab.'); return; }
-  if (mode === 'ai' && !state.aiReady) { toast('Die KI ist noch nicht eingerichtet. Die Demo ist nutzbar.'); return; }
+  if (preloadRequest) { modeMessage('Warte auf den Download oder brich ihn ab.'); return; }
+  if (state.busy) { modeMessage('Bitte warte auf die laufende Antwort oder brich sie ab.'); return; }
+  if (mode === 'ai' && !state.aiReady) { modeMessage('Die KI ist derzeit nicht verfügbar. Du kannst die Demo nutzen.'); return; }
   if (mode !== state.mode || nextModel !== model) {
     if (state.localAI && state.mode === 'ai') void fetch('/api/release');
     state.mode = mode;
@@ -149,6 +187,7 @@ function chooseMode(mode, nextModel = model) {
   $('mode-dialog').close();
 }
 $('choose-demo').addEventListener('click', () => chooseMode('demo')); $('choose-ai').addEventListener('click', () => chooseMode('ai'));
+$('retry-graphics').addEventListener('click', () => void checkGraphics());
 $('preload-toggle').addEventListener('click', () => {
   const panel = $('preload-panel');
   panel.hidden = !panel.hidden;
@@ -158,7 +197,8 @@ $('preload-toggle').addEventListener('click', () => {
 $('preload-cancel').addEventListener('click', () => preloadRequest?.abort());
 $('preload-start').addEventListener('click', async () => {
   if (!state.localAI || preloadRequest) return;
-  if (state.busy) { toast('Bitte warte auf die laufende Antwort oder brich sie ab.'); return; }
+  if (state.busy) { modeMessage('Bitte warte auf die laufende Antwort oder brich sie ab.'); return; }
+  modeMessage();
   const controller = new AbortController();
   preloadRequest = controller;
   const bar = $('preload-progress');
@@ -244,15 +284,14 @@ $('shake-button').addEventListener('click', async () => {
   sensorTimer = setTimeout(() => { if (state.shake && !state.motionSeen) $('shake-note').textContent = 'Noch keine Sensordaten. Öffne die App direkt auf deinem Handy oder tippe auf eine Ampelfarbe.'; }, 4000);
 });
 document.addEventListener('visibilitychange', () => { state.peaks = []; state.lastMotion = null; if (document.hidden && state.recording) state.recognition?.stop(); });
-fetch('/api/status', { cache: 'no-store' }).then(r => { if (!r.ok) throw new Error(); return r.json(); }).then(data => {
-  state.localAI = data.localAI === true;
+if (state.localAI) {
+  models = Object.entries(catalogue).map(([id, item]) => ({ id, name: item.name, downloadMB: item.downloadMB, supported: false }));
+  showModelOptions();
+  renderMode();
+} else fetch('/api/status', { cache: 'no-store' }).then(r => { if (!r.ok) throw new Error(); return r.json(); }).then(data => {
   state.aiReady = data.aiReady === true;
   state.providerName = typeof data.providerName === 'string' ? data.providerName : '';
-  state.mode = state.aiReady && !state.localAI ? 'ai' : 'demo';
-  if (state.localAI) {
-    models = data.models;
-    showModelOptions();
-  }
+  state.mode = state.aiReady ? 'ai' : 'demo';
   renderMode();
 }).catch(() => { renderMode(); $('ai-status').textContent = 'Der Verbindungsstatus konnte nicht geprüft werden. Versuche es nach dem Neuladen erneut.'; });
 })();`;

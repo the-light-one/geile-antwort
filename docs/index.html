@@ -68,7 +68,9 @@ body .action .shake{width:44px;min-height:44px}
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <dialog id="info-dialog"><div class="dialog-head"><h2>Wieder Worte finden.</h2><button type="button" class="close" data-close aria-label="Schließen">✕</button></div><p>Manchmal trifft dich ein Spruch völlig unvorbereitet. Diese App hilft dir, den ersten Schockmoment zu überwinden und einen eigenen Standpunkt hörbar zu machen.</p><h3>Drei Wege, zu antworten</h3><p><strong>Grün:</strong> ruhig und konkret nachfragen.<br><strong>Gelb:</strong> mit einer freundlichen Pointe kontern.<br><strong>Rot:</strong> klar und zugewandt eine Grenze setzen.</p><p>Die Farben stehen für deinen Antwortstil. Bei Bedrohungen geht deine Sicherheit vor. Du darfst ein Gespräch jederzeit beenden.</p><h3>Fachliche Orientierung</h3><a class="source-link" href="https://konterbunt.de/strategieguide/" target="_blank" rel="noopener noreferrer"><strong>KonterBUNT</strong><span>Strategien im Umgang mit Stammtischparolen</span></a><a class="source-link" href="https://www.amadeu-antonio-stiftung.de/modsupport/" target="_blank" rel="noopener noreferrer"><strong>ModSupport · Amadeu Antonio Stiftung</strong><span>Unterstützung gegen Hass im Netz</span></a><p style="font-size:12px">Die Angebote sind fachliche Orientierung. Es besteht keine Partnerschaft oder technische Anbindung. Die Demo verwendet eigene redaktionelle Beispiele.</p></dialog>
 <dialog id="studio-dialog"><div class="dialog-head"><h2>Deine Antwortwerkstatt</h2><button type="button" class="close" data-close aria-label="Schließen">✕</button></div><p>Hier kannst du eigene fachliche Hinweise und Beispiele ergänzen. Sie werden bei KI Antworten als zusätzlicher Kontext mitgegeben. Die Demo verändert sich dadurch nicht.</p><label for="material"><strong style="font-size:14px">Deine Hinweise und Beispielantworten</strong></label><textarea id="material" maxlength="12000" placeholder="Zum Beispiel: Wir möchten Pauschalisierungen auflösen und die Würde betroffener Menschen stärken. Gute Antworten aus unseren Workshops: …"></textarea><div class="studio-actions"><label class="file-label" for="material-file">Textdatei einlesen (.txt oder .md)</label><input id="material-file" type="file" accept=".txt,.md,text/plain,text/markdown" hidden><button id="material-clear" type="button" class="text-button">Hinweise löschen</button></div><label class="check-label"><input id="remember-material" type="checkbox"><span>Hinweise auf diesem Gerät speichern. Auf einem gemeinsam genutzten Gerät lieber ausgeschaltet lassen.</span></label><p class="muted-box">Ohne Speichern bleiben deine Hinweise nur bis zum Neuladen geöffnet. Bitte verwende Material, das du nutzen darfst, und füge keine personenbezogenen Daten ein.</p><p id="material-message" role="status" style="font-size:13px"></p><button id="material-apply" type="button" class="primary">Hinweise übernehmen</button></dialog>
-<dialog id="mode-dialog"><div class="dialog-head"><h2>Wie soll die App antworten?</h2><button type="button" class="close" data-close aria-label="Schließen">✕</button></div><div class="mode-options"><button id="choose-demo" type="button" aria-pressed="true">Demo</button><button id="choose-ai" type="button" aria-pressed="false">KI Antworten</button></div><div class="local-model-options" id="local-model-options" role="group" aria-label="Lokale KI Modelle" hidden></div><p id="mode-description">Die Demo wählt aus vorbereiteten Antworten und allgemeinen Gesprächshilfen. Sie erzeugt keine individuelle KI Antwort.</p><p class="muted-box" id="ai-status">Der KI Zugang wird geprüft.</p>
+<dialog id="mode-dialog"><div class="dialog-head"><h2>Wie soll die App antworten?</h2><button type="button" class="close" data-close aria-label="Schließen">✕</button></div><div class="mode-options"><button id="choose-demo" type="button" aria-pressed="true">Demo</button><button id="choose-ai" type="button" aria-pressed="false">KI Antworten</button></div><div class="local-model-options" id="local-model-options" role="group" aria-label="Lokale KI Modelle" hidden></div><p id="mode-description">Die Demo wählt aus vorbereiteten Antworten und allgemeinen Gesprächshilfen. Sie erzeugt keine individuelle KI Antwort.</p><p class="muted-box" id="ai-status" role="status">Der KI Zugang wird geprüft.</p>
+<button id="retry-graphics" class="text-button" type="button" hidden>Grafik erneut prüfen</button>
+<p id="mode-message" class="form-message" role="status"></p>
 <div id="preload-option" hidden>
   <button id="preload-toggle" class="text-button" type="button" aria-expanded="false" aria-controls="preload-panel">Alle drei Modelle vorladen</button>
   <div id="preload-panel" class="preload-panel" hidden>
@@ -264,20 +266,40 @@ const localAI = (function createBrowserAI({
     return adapter ? model[adapter.features.has('shader-f16') ? 'f16' : 'f32'] : undefined;
   }
 
+  async function checkedAdapter() {
+    let timeout;
+    try {
+      return await Promise.race([
+        getAdapter(),
+        new Promise((_, reject) => {
+          timeout = setTimeout(() => reject(new DOMException('Die Grafikprüfung hat zu lange gedauert.', 'TimeoutError')), 5000);
+        }),
+      ]);
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
   async function status() {
     let adapter;
-    try { adapter = await getAdapter(); } catch { /* The demo works without a GPU. */ }
+    let graphics = 'unavailable';
+    try {
+      adapter = await checkedAdapter();
+      if (adapter) graphics = 'ready';
+    } catch (error) {
+      graphics = error.name === 'TimeoutError' ? 'timed-out' : 'error';
+    }
     const models = Object.entries(browserModels).map(([id, model]) => ({
       id, name: model.name, downloadMB: model.downloadMB, supported: Boolean(modelVariant(model, adapter)),
     }));
-    return { localAI: true, aiReady: Boolean(adapter), models };
+    return { graphics, models };
   }
 
   async function open(model, progress, signal) {
     if (engine && activeModel === model) return engine;
     resetEngine();
     progress('Grafikunterstützung wird geprüft …');
-    const adapter = await getAdapter();
+    const adapter = await checkedAdapter();
     signal.throwIfAborted();
     const selected = browserModels[model];
     const variant = modelVariant(selected, adapter);
@@ -318,7 +340,7 @@ const localAI = (function createBrowserAI({
     });
     const failed = [];
     try {
-      const adapter = await Promise.race([getAdapter(), cancelled]);
+      const adapter = await Promise.race([checkedAdapter(), cancelled]);
       const supported = Object.entries(browserModels).filter(([, item]) => modelVariant(item, adapter));
       if (!supported.length) throw new Error('Auf diesem Gerät ist kein lokales Modell verfügbar.');
       const runtime = await Promise.race([loadRuntime(), cancelled]);
@@ -449,9 +471,10 @@ async function browserFetch(path, options, progress) {
 (() => {
 'use strict';
 const $ = id => document.getElementById(id);
-const state = { tone: 'green', mode: 'demo', aiReady: false, localAI: false, providerName: '', busy: false, result: null, statement: '', material: '', nextVariation: { green: 0, yellow: 0, red: 0 }, consent: false, micConsent: false, recognition: null, recording: false, shake: false, motionSeen: false, lastMotion: null, lastShake: 0, peaks: [], details: false, requestId: 0 };
+const catalogue = typeof browserModels === 'undefined' ? null : browserModels;
+const state = { tone: 'green', mode: 'demo', aiReady: false, localAI: Boolean(catalogue), providerName: '', busy: false, result: null, statement: '', material: '', nextVariation: { green: 0, yellow: 0, red: 0 }, consent: false, micConsent: false, recognition: null, recording: false, shake: false, motionSeen: false, lastMotion: null, lastShake: 0, peaks: [], details: false, requestId: 0 };
 const localConsent = new Set();
-let models = [], model;
+let models = [], model, graphics = 'idle';
 const currentModel = () => models.find(item => item.id === model);
 function resetVariants() { state.nextVariation = { green: 0, yellow: 0, red: 0 }; }
 const toneLabels = { green: 'Gespräch öffnen', yellow: 'Freches Statement', red: 'Klare Grenze · Gespräch beenden' };
@@ -459,13 +482,23 @@ let toastTimer, sensorTimer, localRequest, preloadRequest;
 function toast(text) { $('toast').textContent = text; clearTimeout(toastTimer); toastTimer = setTimeout(() => { $('toast').textContent = ''; }, 4200); }
 function message(text = '') { $('form-message').textContent = text; }
 function hasDialog() { return Boolean(document.querySelector('dialog[open]')); }
-function openDialog(id) { const d = $(id); if (d && !d.open) { if (state.recording) state.recognition?.stop(); d.showModal(); } }
+function openDialog(id) {
+  const dialog = $(id);
+  if (!dialog || dialog.open) return;
+  if (state.recording) state.recognition?.stop();
+  dialog.showModal();
+  if (id === 'mode-dialog') {
+    modeMessage();
+    if (state.localAI && graphics === 'idle') void checkGraphics();
+  }
+}
 document.querySelectorAll('[data-open]').forEach(b => b.addEventListener('click', () => { if (b.dataset.open === 'studio-dialog') { $('material').value = state.material; $('material-message').textContent = ''; } openDialog(b.dataset.open); }));
 document.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', () => b.closest('dialog').close()));
 document.querySelectorAll('dialog').forEach(d => d.addEventListener('click', e => { if (e.target === d) { const r = d.getBoundingClientRect(); if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) d.close(); } }));
 function setBusy(value) { state.busy = value; document.querySelectorAll('[data-tone]').forEach(button => { button.disabled = value || state.recording; }); $('another-button').disabled = value; $('mic-button').disabled = value;  $('result-card').classList.toggle('loading', value); $('result-card').setAttribute('aria-busy', String(value)); }
+function modeMessage(text = '') { $('mode-message').textContent = text; }
 function renderMode() {
-  $('mode-badge').textContent = state.mode === 'ai' ? 'KI · individuelle Antwort' : 'Demo · vorbereitete Antworten';
+  if (!state.result) $('mode-badge').textContent = state.mode === 'ai' ? 'KI · individuelle Antwort' : 'Demo · vorbereitete Antworten';
   $('choose-demo').setAttribute('aria-pressed', String(state.mode === 'demo')); $('choose-ai').setAttribute('aria-pressed', String(state.mode === 'ai'));
   $('mode-description').textContent = state.mode === 'demo' ? 'Die Demo wählt aus vorbereiteten Antworten und allgemeinen Gesprächshilfen. Sie erzeugt keine individuelle KI Antwort.' : 'Die KI formuliert zu deiner Aussage drei Antwortstile. Prüfe selbst, welche Antwort zur Situation passt.';
   $('ai-status').textContent = state.aiReady ? 'KI Zugang verbunden' + (state.providerName ? ' · ' + state.providerName : '') + '. Du kannst individuelle Antworten ausprobieren.' : 'Der KI Zugang ist noch nicht eingerichtet. Die Demo ist bereits nutzbar.';
@@ -473,13 +506,22 @@ function renderMode() {
   $('mode-open').textContent = state.mode === 'ai' ? currentModel().name + ' · Wechseln' : 'KI auswählen';
   $('choose-ai').hidden = true;
   $('mode-description').textContent = 'Die KI wählt aus vorbereiteten Sätzen den passenden zur Aussage und zur Ampelfarbe.';
-  $('ai-status').textContent = state.aiReady ? 'Das ausgewählte Modell lädt beim ersten Einsatz. Deine Eingabe bleibt auf dem Gerät.' : 'Dieser Browser bietet kein nutzbares WebGPU. Die Demo ist verfügbar.';
+  $('ai-status').textContent = {
+    idle: 'Die Grafikprüfung startet beim Öffnen dieses Menüs.',
+    checking: 'Grafikunterstützung wird geprüft …',
+    ready: 'Das ausgewählte Modell lädt beim ersten Einsatz. Deine Eingabe bleibt auf dem Gerät.',
+    'timed-out': 'Der Browser hat auf die Grafikprüfung nicht geantwortet. Du kannst erneut prüfen oder die Demo nutzen.',
+    unavailable: 'Dieser Browser stellt auf dem Gerät kein nutzbares WebGPU bereit. Die Demo ist verfügbar.',
+    error: 'Die Grafikprüfung ist fehlgeschlagen. Du kannst erneut prüfen oder die Demo nutzen.',
+  }[graphics];
+  $('retry-graphics').hidden = graphics === 'idle' || graphics === 'checking' || graphics === 'ready';
   for (const button of $('local-model-options').children) {
     button.setAttribute('aria-pressed', String(state.mode === 'ai' && model === button.dataset.model));
   }
 }
 function showModelOptions() {
   const options = $('local-model-options');
+  options.replaceChildren();
   for (const item of models) {
     const button = document.createElement('button');
     const size = document.createElement('span');
@@ -498,6 +540,24 @@ function showModelOptions() {
   const mb = supported.reduce((sum, item) => sum + item.downloadMB, 0);
   const size = mb >= 1000 ? (mb / 1000).toLocaleString('de-DE', { maximumFractionDigits: 2 }) + ' GB' : mb + ' MB';
   $('preload-description').textContent = 'Der Download benötigt bis zu ' + size + '. Bereits gespeicherte Modelle werden übersprungen.';
+}
+async function checkGraphics() {
+  if (graphics === 'checking') return;
+  graphics = 'checking';
+  modeMessage();
+  renderMode();
+  try {
+    const response = await browserFetch('/api/status', { cache: 'no-store' });
+    if (!response.ok) throw new Error();
+    const data = await response.json();
+    models = data.models;
+    graphics = data.graphics;
+    state.aiReady = graphics === 'ready';
+    showModelOptions();
+  } catch {
+    graphics = 'error';
+  }
+  renderMode();
 }
 function invalidate() {
   if (!state.result) return;
@@ -582,9 +642,9 @@ $('answer-form').addEventListener('submit', e => { e.preventDefault(); requestAn
 $('detail-button').addEventListener('click', () => { state.details = !state.details; $('result-extra').hidden = !state.details; $('detail-button').setAttribute('aria-expanded', String(state.details)); });
 $('copy-button').addEventListener('click', async () => { const answer = $('answer-text').textContent; if (!state.result || !answer) return; try { await navigator.clipboard.writeText(answer); toast('Antwort kopiert.'); } catch { toast('Kopieren ist hier nicht verfügbar. Markiere den Antworttext zum Kopieren.'); } });
 function chooseMode(mode, nextModel = model) {
-  if (preloadRequest) { toast('Warte auf den Download oder brich ihn ab.'); return; }
-  if (state.busy) { toast('Bitte warte auf die laufende Antwort oder brich sie ab.'); return; }
-  if (mode === 'ai' && !state.aiReady) { toast('Die KI ist noch nicht eingerichtet. Die Demo ist nutzbar.'); return; }
+  if (preloadRequest) { modeMessage('Warte auf den Download oder brich ihn ab.'); return; }
+  if (state.busy) { modeMessage('Bitte warte auf die laufende Antwort oder brich sie ab.'); return; }
+  if (mode === 'ai' && !state.aiReady) { modeMessage('Die KI ist derzeit nicht verfügbar. Du kannst die Demo nutzen.'); return; }
   if (mode !== state.mode || nextModel !== model) {
     if (state.localAI && state.mode === 'ai') void browserFetch('/api/release');
     state.mode = mode;
@@ -597,6 +657,7 @@ function chooseMode(mode, nextModel = model) {
   $('mode-dialog').close();
 }
 $('choose-demo').addEventListener('click', () => chooseMode('demo')); $('choose-ai').addEventListener('click', () => chooseMode('ai'));
+$('retry-graphics').addEventListener('click', () => void checkGraphics());
 $('preload-toggle').addEventListener('click', () => {
   const panel = $('preload-panel');
   panel.hidden = !panel.hidden;
@@ -606,7 +667,8 @@ $('preload-toggle').addEventListener('click', () => {
 $('preload-cancel').addEventListener('click', () => preloadRequest?.abort());
 $('preload-start').addEventListener('click', async () => {
   if (!state.localAI || preloadRequest) return;
-  if (state.busy) { toast('Bitte warte auf die laufende Antwort oder brich sie ab.'); return; }
+  if (state.busy) { modeMessage('Bitte warte auf die laufende Antwort oder brich sie ab.'); return; }
+  modeMessage();
   const controller = new AbortController();
   preloadRequest = controller;
   const bar = $('preload-progress');
@@ -692,15 +754,14 @@ $('shake-button').addEventListener('click', async () => {
   sensorTimer = setTimeout(() => { if (state.shake && !state.motionSeen) $('shake-note').textContent = 'Noch keine Sensordaten. Öffne die App direkt auf deinem Handy oder tippe auf eine Ampelfarbe.'; }, 4000);
 });
 document.addEventListener('visibilitychange', () => { state.peaks = []; state.lastMotion = null; if (document.hidden && state.recording) state.recognition?.stop(); });
-browserFetch('/api/status', { cache: 'no-store' }).then(r => { if (!r.ok) throw new Error(); return r.json(); }).then(data => {
-  state.localAI = data.localAI === true;
+if (state.localAI) {
+  models = Object.entries(catalogue).map(([id, item]) => ({ id, name: item.name, downloadMB: item.downloadMB, supported: false }));
+  showModelOptions();
+  renderMode();
+} else browserFetch('/api/status', { cache: 'no-store' }).then(r => { if (!r.ok) throw new Error(); return r.json(); }).then(data => {
   state.aiReady = data.aiReady === true;
   state.providerName = typeof data.providerName === 'string' ? data.providerName : '';
-  state.mode = state.aiReady && !state.localAI ? 'ai' : 'demo';
-  if (state.localAI) {
-    models = data.models;
-    showModelOptions();
-  }
+  state.mode = state.aiReady ? 'ai' : 'demo';
   renderMode();
 }).catch(() => { renderMode(); $('ai-status').textContent = 'Der Verbindungsstatus konnte nicht geprüft werden. Versuche es nach dem Neuladen erneut.'; });
 })();</script></body></html>

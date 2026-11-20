@@ -46,20 +46,40 @@ export function createBrowserAI({
     return adapter ? model[adapter.features.has('shader-f16') ? 'f16' : 'f32'] : undefined;
   }
 
+  async function checkedAdapter() {
+    let timeout;
+    try {
+      return await Promise.race([
+        getAdapter(),
+        new Promise((_, reject) => {
+          timeout = setTimeout(() => reject(new DOMException('Die Grafikprüfung hat zu lange gedauert.', 'TimeoutError')), 5000);
+        }),
+      ]);
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
   async function status() {
     let adapter;
-    try { adapter = await getAdapter(); } catch { /* The demo works without a GPU. */ }
+    let graphics = 'unavailable';
+    try {
+      adapter = await checkedAdapter();
+      if (adapter) graphics = 'ready';
+    } catch (error) {
+      graphics = error.name === 'TimeoutError' ? 'timed-out' : 'error';
+    }
     const models = Object.entries(browserModels).map(([id, model]) => ({
       id, name: model.name, downloadMB: model.downloadMB, supported: Boolean(modelVariant(model, adapter)),
     }));
-    return { localAI: true, aiReady: Boolean(adapter), models };
+    return { graphics, models };
   }
 
   async function open(model, progress, signal) {
     if (engine && activeModel === model) return engine;
     resetEngine();
     progress('Grafikunterstützung wird geprüft …');
-    const adapter = await getAdapter();
+    const adapter = await checkedAdapter();
     signal.throwIfAborted();
     const selected = browserModels[model];
     const variant = modelVariant(selected, adapter);
@@ -100,7 +120,7 @@ export function createBrowserAI({
     });
     const failed = [];
     try {
-      const adapter = await Promise.race([getAdapter(), cancelled]);
+      const adapter = await Promise.race([checkedAdapter(), cancelled]);
       const supported = Object.entries(browserModels).filter(([, item]) => modelVariant(item, adapter));
       if (!supported.length) throw new Error('Auf diesem Gerät ist kein lokales Modell verfügbar.');
       const runtime = await Promise.race([loadRuntime(), cancelled]);
