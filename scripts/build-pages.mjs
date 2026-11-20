@@ -15,6 +15,7 @@ const browserDemo = [
   "  if (path === '/api/status') return Response.json(await localAI.status());",
   "  if (path === '/api/release') { localAI.release(); return new Response(null, { status: 204 }); }",
   "  if (path === '/api/preload') return Response.json(await localAI.preload(options.signal, progress, options.startWithModel));",
+  "  if (path === '/api/activate') return Response.json(await localAI.activate(options.model, options.signal, progress, options.allowDownload));",
   '  const input = JSON.parse(options.body);',
   '  const reference = demoAnswer(input.statement, input.variation);',
   "  if (input.mode === 'demo') return Response.json({ ...reference, mode: 'demo' });",

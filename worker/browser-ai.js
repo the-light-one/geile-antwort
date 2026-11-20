@@ -29,12 +29,12 @@ export function createBrowserAI({
     yellow: 'Eine kurze, schlagfertige Pointe als Aussage. Keine Frage oder Aufforderung zum Weiterreden.',
     red: 'Eine ruhige, klare Grenze in der Ich-Form. Schließe den Austausch ausdrücklich ab. Keine Frage.',
   };
-  let engine, session, workerFailure, activeModel;
+  let engine, session, workerFailure, activeModel, activeVariant;
   let lastStatement, lastMaterial, lastModel, previous;
 
   function resetEngine() {
     session?.close();
-    engine = session = workerFailure = activeModel = undefined;
+    engine = session = workerFailure = activeModel = activeVariant = undefined;
   }
 
   function release() {
@@ -75,18 +75,26 @@ export function createBrowserAI({
     return { graphics, models };
   }
 
-  async function open(model, progress, signal) {
+  function isCached(runtime, variant) {
+    return runtime.hasModelInCache(variant).catch(() => false);
+  }
+
+  async function open(model, progress, signal, options = {}) {
     if (engine && activeModel === model) return engine;
-    resetEngine();
     progress('Grafikunterstützung wird geprüft …');
-    const adapter = await checkedAdapter();
+    const adapter = options.adapter ?? await checkedAdapter();
     signal.throwIfAborted();
     const selected = browserModels[model];
     const variant = modelVariant(selected, adapter);
     if (!variant) throw new Error('Die Grafikunterstützung für ' + selected.name + ' fehlt.');
     progress('KI-Laufzeit wird geladen …');
-    const runtime = await loadRuntime();
+    const runtime = options.runtime ?? await loadRuntime();
+    const cached = options.cached ?? await isCached(runtime, variant);
     signal.throwIfAborted();
+    if (!cached && options.allowDownload === false) return null;
+    resetEngine();
+    const loading = cached ? selected.name + ' wird aus dem Browserspeicher gestartet' : selected.name + ' wird heruntergeladen';
+    progress(loading + ' …');
     // Gemma's published configuration sets two mutually exclusive windows.
     const chatOptions = model === 'gemma' ? { context_window_size: 2048, sliding_window_size: -1 } : undefined;
     session = startWorker();
@@ -100,7 +108,7 @@ export function createBrowserAI({
         initProgressCallback: ({ progress: fraction }) => {
           if (signal.aborted) return;
           const percent = Math.min(100, Math.max(0, Math.floor((fraction || 0) * 100)));
-          progress(percent === 100 ? selected.name + ' wird vorbereitet …' : selected.name + ' wird geladen … ' + percent + ' %', percent / 100);
+          progress(percent === 100 ? selected.name + ' wird vorbereitet …' : loading + ' … ' + percent + ' %', percent / 100);
         },
       }, chatOptions),
       workerFailure,
@@ -108,7 +116,32 @@ export function createBrowserAI({
     signal.throwIfAborted();
     engine = loaded;
     activeModel = model;
+    activeVariant = variant;
     return engine;
+  }
+
+  async function activate(model, signal, progress, allowDownload = false) {
+    if (!Object.hasOwn(browserModels, model)) throw new Error('Wähle ein verfügbares Modell.');
+    signal.throwIfAborted();
+    const previousSession = session;
+    let stop;
+    const cancelled = new Promise((_, reject) => {
+      stop = () => reject(signal.reason);
+      signal.addEventListener('abort', stop, { once: true });
+    });
+    try {
+      const runtime = await Promise.race([loadRuntime(), cancelled]);
+      const activated = await Promise.race([open(model, progress, signal, { runtime, allowDownload }), cancelled]);
+      if (!activated) return { downloadRequired: true };
+      const cached = await Promise.race([isCached(runtime, activeVariant), cancelled]);
+      signal.throwIfAborted();
+      return { cached };
+    } catch (error) {
+      if (session !== previousSession) resetEngine();
+      throw error;
+    } finally {
+      signal.removeEventListener('abort', stop);
+    }
   }
 
   async function preload(signal, report, startWithModel = false) {
@@ -135,14 +168,16 @@ export function createBrowserAI({
         let keepEngine = false;
         try {
           const variant = modelVariant(item, adapter);
-          const cached = await Promise.race([runtime.hasModelInCache(variant).catch(() => false), cancelled]);
+          const cached = await Promise.race([isCached(runtime, variant), cancelled]);
           if (!cached || activate) {
             if (cached) update(1);
-            await Promise.race([open(id, (_, fraction = 0) => update(fraction), signal), cancelled]);
+            await Promise.race([open(id, (_, fraction = 0) => update(fraction), signal, { adapter, runtime, cached }), cancelled]);
           }
+          const stored = cached || await Promise.race([isCached(runtime, variant), cancelled]);
           signal.throwIfAborted();
-          update(1, true);
-          ready.push(id);
+          update(1, stored);
+          if (!stored) failed.push(item.name);
+          if (stored || activate) ready.push(id);
           keepEngine = activate;
         } catch {
           signal.throwIfAborted();
@@ -199,7 +234,8 @@ export function createBrowserAI({
       signal.addEventListener('abort', stop, { once: true });
     });
     try {
-      const llm = await Promise.race([open(model, progress, signal), cancelled]);
+      const llm = await Promise.race([open(model, progress, signal, { allowDownload: false }), cancelled]);
+      if (!llm) return { ...select(options[0], false), localDownloadRequired: true };
       progress(browserModels[model].name + ' sucht den passendsten Vorschlag …');
       const completion = await Promise.race([
         llm.chat.completions.create({
@@ -243,5 +279,5 @@ export function createBrowserAI({
     }
   }
 
-  return { answer, release, status, preload };
+  return { answer, release, status, preload, activate };
 }

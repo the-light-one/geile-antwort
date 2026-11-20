@@ -14,6 +14,8 @@ Die [App auf GitHub Pages](https://the-light-one.github.io/geile-antwort/) lädt
 
 „Demo jetzt nutzen“ beendet den Download und öffnet die App ohne KI. Du kannst später im Modellmenü weiterladen oder zur Demo wechseln.
 
+Beim Modellwechsel startet die App das gewählte Modell aus dem Browserspeicher. Sind dessen Dateien nicht mehr gespeichert, kannst du genau dieses Modell im Menü erneut herunterladen.
+
 ## Lokal ausprobieren
 
 Mit Node.js 22 oder neuer im Projektordner `node scripts/dev.mjs` ausführen und http://localhost:8787 öffnen. Die Demo nutzt vorbereitete Antworten. Texteingabe funktioniert unabhängig von den Gerätefunktionen. Schütteln hängt von Browser, Gerät und Freigaben ab.

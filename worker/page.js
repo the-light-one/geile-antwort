@@ -81,6 +81,7 @@ body .action .shake{width:44px;min-height:44px}
 <dialog id="mode-dialog"><div class="dialog-head"><h2>Wie soll die App antworten?</h2><button type="button" class="close" data-close aria-label="Schließen">✕</button></div><div class="mode-options"><button id="choose-demo" type="button" aria-pressed="true">Demo</button><button id="choose-ai" type="button" aria-pressed="false">KI Antworten</button></div><div class="local-model-options" id="local-model-options" role="group" aria-label="Lokale KI Modelle" hidden></div><p id="mode-description">Die Demo wählt aus vorbereiteten Antworten und allgemeinen Gesprächshilfen. Sie erzeugt keine individuelle KI Antwort.</p><p class="muted-box" id="ai-status" role="status">Der KI Zugang wird geprüft.</p>
 <button id="retry-graphics" class="text-button" type="button" hidden>Grafik erneut prüfen</button>
 <p id="mode-message" class="form-message" role="status"></p>
+<button id="model-download" class="primary" type="button" hidden></button>
 <div id="preload-option" hidden>
   <button id="preload-toggle" class="text-button" type="button" aria-expanded="false" aria-controls="preload-panel">Alle drei Modelle vorladen</button>
   <div id="preload-panel" class="preload-panel" hidden>

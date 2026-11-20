@@ -36,7 +36,7 @@ export const pack = (green, yellow, red, bridge, close = true) => ({
 });
 export function demoAnswer(statement, variation = 0) {
   const t = statement.toLocaleLowerCase('de');
-  if (/(umbringen|abstechen|verprügeln|erschlagen|schlag dich|bring dich um|töte|töten|gewalt androhen)/u.test(t)) return { ...pack('Ich möchte Abstand. Können wir das Gespräch jetzt beenden?', 'Ich beende dieses Gespräch jetzt und hole mir Unterstützung.', 'Stopp. Ich möchte nicht bedroht werden und gehe jetzt.', '', false), care: 'Du schuldest niemandem eine schlagfertige Reaktion.', safety: 'Bei Bedrohung: Halte Abstand und suche Unterstützung bei einer sicheren Person. Du musst das Gespräch nicht fortsetzen.', topic: 'Selbstschutz', matched: true };
+  if (/(umbringen|abstechen|verprügeln|erschlagen|schlag dich|bring dich um|töte|töten|gewalt androhen|\bich hau(?:e)? dir (?:gleich |jetzt )?eine rein\b)/u.test(t)) return { ...pack('Ich möchte Abstand. Können wir das Gespräch jetzt beenden?', 'Ich beende dieses Gespräch jetzt und hole mir Unterstützung.', 'Stopp. Ich möchte nicht bedroht werden und gehe jetzt.', '', false), care: 'Du schuldest niemandem eine schlagfertige Reaktion.', safety: 'Bei Bedrohung: Halte Abstand und suche Unterstützung bei einer sicheren Person. Du musst das Gespräch nicht fortsetzen.', topic: 'Selbstschutz', matched: true };
   const tailored = strategyAnswer(statement, variation);
   if (tailored) return tailored;
   // No sufficiently specific rule matched. Do not guess which group or

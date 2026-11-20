@@ -46,7 +46,7 @@ const strategyTopics = [
   },
   {
     topic: "Abwertung als Witz",
-    cues: /(?:\bnur (?:ein(?:en)? )?(?:witz|scherz|spa[ßs]s?)\b|verstehst? (?:auch )?keinen spa[ßs]s?|war (?:doch )?(?:witzig|lustig) gemeint|wird man doch mal lachen dürfen|witz muss man abkönnen)/u,
+    cues: /(?:\bnur (?:ein(?:en)? )?(?:witz|scherz|spaß|spass)(?![\p{L}\p{N}])|verstehst? (?:(?:auch|wohl|etwa) )?keinen (?:spaß|spass)(?![\p{L}\p{N}])|war (?:doch )?(?:witzig|lustig) gemeint|wird man doch mal lachen dürfen|witz muss man abkönnen)/u,
     variants: [
       ["Was daran sollte für die Person lustig sein, über die gesprochen wurde?", "Wenn der Witz einen Fußabtreter braucht, fehlt ihm eine Pointe.", "Ich mag Humor, der Menschen nicht kleinmacht. Ich lasse das Gespräch hier enden."],
       ["Wie könnte der Spruch bei jemandem ankommen, der selbst gemeint ist?", "Die Pointe darf gern auf eigenen Beinen stehen.", "Für mich war die Grenze überschritten. Ich rede darüber jetzt nicht weiter."],
@@ -68,7 +68,7 @@ const strategyTopics = [
   {
     topic: "Behinderung und Teilhabe",
     anchors: /(?:behinder|rollstuhl|beeinträchtig)/u,
-    cues: /(?:k(?:ann|önnen) (?:doch |sowieso |eh )?(?:nichts|nicht)|(?:sollte[n]?|darf|dürfen) nicht mitmachen|gehören hier nicht|nur eine last|schaffen? das (?:doch |eh |sowieso )?nicht)/u,
+    cues: /(?:k(?:ann|önnen) (?:doch |sowieso |eh )?(?:nichts|nicht)|(?:sollten?|darf|dürfen) (?:(?:da|dort|hier|gar|doch|eh|sowieso|einfach|überhaupt) )*nicht (?:mitmachen|teilnehmen)|gehören hier nicht|nur eine last|schaffen? das (?:doch |eh |sowieso )?nicht)/u,
     variants: [
       ["Was wäre nötig, damit die Person bei der konkreten Aufgabe mitmachen kann?", "Eine Stufe verrät mehr über den Eingang als über die Person davor.", "Für mich hat jede Person eine faire Chance verdient. Ich beende das Gespräch an dieser Stelle."],
       ["Hast du die Person gefragt, wie sie selbst gern teilnehmen möchte?", "Über jemanden hinwegzuplanen ist keine besonders barrierefreie Art zu denken.", "Ich respektiere, dass die Person selbst bestimmt, was sie sich zutraut. Damit schließe ich ab."],

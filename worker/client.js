@@ -4,11 +4,12 @@ const $ = id => document.getElementById(id);
 const catalogue = typeof browserModels === 'undefined' ? null : browserModels;
 const state = { tone: 'green', mode: 'demo', aiReady: false, localAI: Boolean(catalogue), providerName: '', busy: false, result: null, statement: '', material: '', nextVariation: { green: 0, yellow: 0, red: 0 }, consent: false, shake: false, motionSeen: false, lastMotion: null, lastShake: 0, peaks: [], details: false, requestId: 0 };
 const localConsent = new Set();
+const savedModels = new Set();
 let models = [], model, graphics = 'idle';
 const currentModel = () => models.find(item => item.id === model);
 function resetVariants() { state.nextVariation = { green: 0, yellow: 0, red: 0 }; }
 const toneLabels = { green: 'Gespräch öffnen', yellow: 'Freches Statement', red: 'Klare Grenze · Gespräch beenden' };
-let toastTimer, sensorTimer, localRequest, preloadRequest;
+let toastTimer, sensorTimer, localRequest, preloadRequest, modelRequest, pendingDownload;
 function toast(text) { $('toast').textContent = text; clearTimeout(toastTimer); toastTimer = setTimeout(() => { $('toast').textContent = ''; }, 4200); }
 function message(text = '') { $('form-message').textContent = text; }
 function hasDialog() { return Boolean(document.querySelector('dialog[open]')); }
@@ -18,6 +19,7 @@ function openDialog(id) {
   dialog.showModal();
   if (id === 'mode-dialog') {
     modeMessage();
+    clearModelDownload();
     if (state.localAI && graphics === 'idle') void checkGraphics();
   }
 }
@@ -57,9 +59,9 @@ function showModelOptions() {
     button.type = 'button';
     button.dataset.model = item.id;
     button.disabled = !item.supported;
-    size.textContent = item.supported || !state.aiReady ? 'ca. ' + item.downloadMB + ' MB' : 'Grafikfunktion fehlt';
+    size.textContent = savedModels.has(item.id) ? 'Gespeichert' : item.supported || !state.aiReady ? 'ca. ' + item.downloadMB + ' MB' : 'Grafikfunktion fehlt';
     button.append(item.name, size);
-    button.addEventListener('click', () => chooseMode('ai', item.id));
+    button.addEventListener('click', () => void switchModel(item));
     options.append(button);
   }
   options.hidden = false;
@@ -114,12 +116,13 @@ function renderResult() {
   $('result-card').classList.remove('stale'); $('result-card').classList.add('has-result'); $('answer-text').classList.remove('empty'); $('answer-text').textContent = selected.answer;
   $('empty-detail').hidden = true; $('result-topic').hidden = false; $('result-topic').textContent = toneLabels[state.tone];
   $('mode-badge').textContent = r.localSelection ? (models.find(item => item.id === r.model)?.name || 'Lokale KI') : r.mode === 'ai' ? 'KI · individuelle Antwort' : 'Vorbereitete Antwort';
-  $('result-tip').textContent = r.localUnavailable ? 'Die lokale KI ist gerade nicht verfügbar.' : r.localFallback ? 'Vorbereiteter Vorschlag ohne KI Auswahl.' : r.localSelection || r.mode === 'demo' ? (r.matched ? r.topic : 'Allgemeiner Antwortvorschlag') : r.care;
+  $('result-tip').textContent = r.localDownloadRequired ? 'Die Modelldateien fehlen. Du kannst sie im Modellmenü herunterladen.' : r.localUnavailable ? 'Die lokale KI ist gerade nicht verfügbar.' : r.localFallback ? 'Vorbereiteter Vorschlag ohne KI Auswahl.' : r.localSelection || r.mode === 'demo' ? (r.matched ? r.topic : 'Allgemeiner Antwortvorschlag') : r.care;
   $('result-tools').hidden = false; $('bridge-text').textContent = selected.bridge; $('why-text').textContent = selected.why; $('safety-text').textContent = r.safety || ''; $('safety-text').hidden = !r.safety;
   if (r.safety) state.details = true; $('result-extra').hidden = !state.details; $('detail-button').setAttribute('aria-expanded', String(state.details));
 }
 async function requestAnswer() {
   if (preloadRequest && !preloadRequest.signal.aborted) { message('Die Modelle werden gerade vorgeladen. Du kannst den Download im Menü abbrechen.'); return; }
+  if (modelRequest) { message('Das gewählte Modell wird gerade gestartet.'); return; }
   if (state.busy) return; const statement = $('statement').value.trim();
   if (!statement) { message('Tippe zuerst die Aussage ein.'); $('statement').focus(); return; }
   if (statement.length > 1200) { message('Bitte kürze die Aussage auf höchstens 1.200 Zeichen.'); return; }
@@ -170,21 +173,67 @@ $('cancel-local-ai')?.addEventListener('click', () => localRequest?.abort());
 $('answer-form').addEventListener('submit', e => { e.preventDefault(); requestAnswer(); }); $('another-button').addEventListener('click', () => requestAnswer());
 $('detail-button').addEventListener('click', () => { state.details = !state.details; $('result-extra').hidden = !state.details; $('detail-button').setAttribute('aria-expanded', String(state.details)); });
 $('copy-button').addEventListener('click', async () => { const answer = $('answer-text').textContent; if (!state.result || !answer) return; try { await navigator.clipboard.writeText(answer); toast('Antwort kopiert.'); } catch { toast('Kopieren ist hier nicht verfügbar. Markiere den Antworttext zum Kopieren.'); } });
-function chooseMode(mode, nextModel = model) {
+function applyMode(mode, nextModel = model) {
+  if (mode === state.mode && nextModel === model) return;
+  state.mode = mode;
+  model = nextModel;
+  resetVariants();
+  invalidate();
+  renderMode();
+  message();
+}
+function chooseMode(mode) {
   if (preloadRequest && !preloadRequest.signal.aborted) { modeMessage('Warte auf den Download oder brich ihn ab.'); return; }
+  if (modelRequest) { modeMessage('Warte auf den Modellstart oder schließe das Menü, um ihn abzubrechen.'); return; }
   if (state.busy) { modeMessage('Bitte warte auf die laufende Antwort oder brich sie ab.'); return; }
   if (mode === 'ai' && !state.aiReady) { modeMessage('Die KI ist derzeit nicht verfügbar. Du kannst die Demo nutzen.'); return; }
-  if (mode !== state.mode || nextModel !== model) {
-    if (state.localAI && state.mode === 'ai') void fetch('/api/release');
-    state.mode = mode;
-    model = nextModel;
-    resetVariants();
-    invalidate();
-    renderMode();
-    message();
-  }
+  if (state.localAI && state.mode === 'ai' && mode === 'demo') void fetch('/api/release');
+  applyMode(mode);
   $('mode-dialog').close();
 }
+function clearModelDownload() {
+  pendingDownload = undefined;
+  $('model-download').hidden = true;
+}
+async function switchModel(item, allowDownload = false) {
+  if (!item.supported || modelRequest || (preloadRequest && !preloadRequest.signal.aborted)) return;
+  if (state.busy) { modeMessage('Bitte warte auf die laufende Antwort oder brich sie ab.'); return; }
+  clearModelDownload();
+  modeMessage(item.name + ' wird geprüft …');
+  const controller = new AbortController();
+  modelRequest = controller;
+  const timeout = setTimeout(() => controller.abort(), 600000);
+  try {
+    const response = await fetch('/api/activate', { model: item.id, signal: controller.signal, allowDownload }, modeMessage);
+    const result = await response.json();
+    controller.signal.throwIfAborted();
+    if (result.cached) savedModels.add(item.id);
+    else savedModels.delete(item.id);
+    showModelOptions();
+    if (result.downloadRequired) {
+      renderMode();
+      pendingDownload = item;
+      const button = $('model-download');
+      button.textContent = item.name + ' herunterladen (ca. ' + item.downloadMB + ' MB)';
+      button.hidden = false;
+      button.focus();
+      modeMessage('Die Dateien für ' + item.name + ' fehlen im Browserspeicher.');
+      return;
+    }
+    localConsent.add(item.id);
+    applyMode('ai', item.id);
+    renderMode();
+    modeMessage();
+    $('mode-dialog').close();
+  } catch {
+    if ($('mode-dialog').open) modeMessage(item.name + ' konnte nicht gestartet werden. Du kannst es noch einmal versuchen.');
+  } finally {
+    clearTimeout(timeout);
+    modelRequest = undefined;
+  }
+}
+$('mode-dialog').addEventListener('close', () => { if (!$('mode-dialog').open) modelRequest?.abort(); });
+$('model-download').addEventListener('click', () => { if (pendingDownload) void switchModel(pendingDownload, true); });
 $('choose-demo').addEventListener('click', () => chooseMode('demo')); $('choose-ai').addEventListener('click', () => chooseMode('ai'));
 $('retry-graphics').addEventListener('click', () => void checkGraphics());
 $('preload-toggle').addEventListener('click', () => {
@@ -202,7 +251,7 @@ $('startup-demo').addEventListener('click', skipStartup);
 $('startup-dialog').addEventListener('cancel', event => { event.preventDefault(); skipStartup(); });
 $('preload-start').addEventListener('click', () => void prepareModels());
 async function prepareModels(startup = false) {
-  if (!state.localAI || preloadRequest) return;
+  if (!state.localAI || preloadRequest || modelRequest) return;
   if (state.busy) { modeMessage('Bitte warte auf die laufende Antwort oder brich sie ab.'); return; }
   modeMessage();
   const controller = new AbortController();
@@ -244,19 +293,22 @@ async function prepareModels(startup = false) {
       percent.textContent = bar.value + ' %';
       const step = 'Modell ' + (index + 1) + ' von ' + total + ' · ' + name;
       if (label.textContent !== step) label.textContent = step;
-      if (ready) localConsent.add(id);
+      if (ready) {
+        localConsent.add(id);
+        savedModels.add(id);
+      }
     });
     const { failed, total, preferred } = await response.json();
     controller.signal.throwIfAborted();
+    for (const item of models) if (failed.includes(item.name)) savedModels.delete(item.id);
     const summary = failed.length
-      ? (total - failed.length) + ' von ' + total + ' Modellen bereit. Fehler bei ' + failed.join(', ') + '. Du kannst den Download erneut starten.'
-      : total + ' von ' + total + ' Modellen sind auf diesem Gerät bereit.';
+      ? (total - failed.length) + ' von ' + total + ' Modellen gespeichert. Fehlgeschlagen: ' + failed.join(', ') + '. Du kannst den Download erneut starten.'
+      : total + ' von ' + total + ' Modellen sind auf diesem Gerät gespeichert.';
     $('preload-status').textContent = summary;
     if (startup) {
       if (preferred) {
-        state.mode = 'ai';
-        model = preferred;
-        renderMode();
+        localConsent.add(preferred);
+        applyMode('ai', preferred);
       }
       if (failed.length || total < models.length) message(summary + (preferred ? '' : ' Die Demo ist verfügbar.'));
     }
@@ -270,6 +322,8 @@ async function prepareModels(startup = false) {
   } finally {
     preloadRequest = undefined;
     meter.hidden = true;
+    showModelOptions();
+    renderMode();
     if (startup) $('startup-dialog').close();
     else {
       cancel.hidden = true;
