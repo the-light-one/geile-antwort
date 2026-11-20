@@ -201,7 +201,9 @@ $('preload-start').addEventListener('click', async () => {
   modeMessage();
   const controller = new AbortController();
   preloadRequest = controller;
+  const meter = $('preload-meter');
   const bar = $('preload-progress');
+  const percent = $('preload-percent');
   const label = $('preload-status');
   const start = $('preload-start');
   const cancel = $('preload-cancel');
@@ -210,18 +212,23 @@ $('preload-start').addEventListener('click', async () => {
   cancel.focus();
   $('preload-toggle').disabled = true;
   label.textContent = 'Download wird vorbereitet …';
+  let currentIndex = -1;
   bar.value = 0;
-  bar.hidden = false;
+  percent.textContent = '0 %';
+  meter.hidden = false;
   try {
     const response = await fetch('/api/preload', { signal: controller.signal }, ({ id, name, index, total, fraction, ready }) => {
-      bar.max = total;
-      bar.value = Math.max(bar.value, index + fraction);
+      if (index !== currentIndex) {
+        currentIndex = index;
+        bar.value = 0;
+      }
+      bar.value = Math.max(bar.value, Math.round(fraction * 100));
+      percent.textContent = bar.value + ' %';
       const step = 'Modell ' + (index + 1) + ' von ' + total + ' · ' + name;
       if (label.textContent !== step) label.textContent = step;
       if (ready) localConsent.add(id);
     });
     const { failed, total } = await response.json();
-    bar.value = total;
     label.textContent = failed.length
       ? (total - failed.length) + ' von ' + total + ' Modellen bereit. Fehler bei ' + failed.join(', ') + '. Du kannst den Download erneut starten.'
       : total + ' von ' + total + ' Modellen sind auf diesem Gerät bereit.';
@@ -231,7 +238,7 @@ $('preload-start').addEventListener('click', async () => {
       : 'Der Download konnte nicht gestartet werden. Prüfe deine Verbindung und versuche es erneut.';
   } finally {
     preloadRequest = undefined;
-    bar.hidden = true;
+    meter.hidden = true;
     cancel.hidden = true;
     start.hidden = false;
     $('preload-toggle').disabled = false;

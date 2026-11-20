@@ -45,7 +45,9 @@ body .action .shake{width:44px;min-height:44px}
 .local-model-options button:focus-visible{outline:3px solid #635bda}
 .local-model-options button:disabled{cursor:default}
 .preload-panel{border-top:1px solid var(--line);margin-top:8px;padding-top:8px}
-.preload-panel progress{display:block;width:100%;height:14px;accent-color:var(--orange);margin:12px 0}
+.preload-meter{display:flex;align-items:center;gap:12px;margin:10px 0}
+.preload-meter progress{flex:1;min-width:0;height:14px;accent-color:var(--orange)}
+.preload-percent{min-width:3.5em;text-align:right;font-size:14px;font-weight:600;font-variant-numeric:tabular-nums}
 .preload-panel .primary{margin-top:4px}
 .preload-status{margin:10px 0 0}
 .preload-status:empty{display:none}
@@ -77,8 +79,11 @@ body .action .shake{width:44px;min-height:44px}
   <button id="preload-toggle" class="text-button" type="button" aria-expanded="false" aria-controls="preload-panel">Alle drei Modelle vorladen</button>
   <div id="preload-panel" class="preload-panel" hidden>
     <p id="preload-description"></p>
-    <progress id="preload-progress" max="3" value="0" aria-label="Fortschritt beim Vorladen" hidden></progress>
     <p id="preload-status" class="preload-status" role="status"></p>
+    <div id="preload-meter" class="preload-meter" hidden>
+      <progress id="preload-progress" max="100" value="0" aria-label="Downloadfortschritt" aria-describedby="preload-status"></progress>
+      <span id="preload-percent" class="preload-percent" aria-hidden="true">0 %</span>
+    </div>
     <button id="preload-start" type="button" class="primary">Download starten</button>
     <button id="preload-cancel" type="button" class="text-button" hidden>Download abbrechen</button>
   </div>
